@@ -1,0 +1,83 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_classprogress/history_view
+
+    History rows of entries, newest first, each with the entry as it was.
+
+    Context variables required for this template:
+    * hasversions - Whether there is any row.
+    * versions - The rows, each with:
+      * action, time, by - What changed, when, and who did it.
+      * date, status, reason, writtenon, late - The entry's day, status and reason names, written-on day and late flag
+        (empty when not late).
+      * content, note, measure - The entry's texts, already through format_text().
+      * carry - Whether it continues in the next session.
+
+    Example context (json):
+    {
+        "hasversions": true,
+        "versions": [{
+            "action": "Edited",
+            "time": "Sunday, 18 October 2026, 12:00 PM",
+            "by": "By Anna Puig",
+            "date": "2026-10-16",
+            "status": "Partly done",
+            "reason": "Incident",
+            "writtenon": "2026-10-18",
+            "late": "Late by 2 days",
+            "content": "<p>Half of the list</p>",
+            "note": "<p>Projector</p>",
+            "measure": "",
+            "carry": true
+        }]
+    }
+}}
+<div class="mod_classprogress-history">
+    {{#hasversions}}
+        {{#versions}}
+            <section class="card mb-3" data-region="history-version">
+                <div class="card-body">
+                    <h4 class="card-title">{{action}} · {{time}}</h4>
+                    <p class="text-muted">{{by}}</p>
+                    <dl class="row">
+                        <dt class="col-sm-3">{{#str}} sessiondate, mod_classprogress {{/str}}</dt>
+                        <dd class="col-sm-9">{{date}}</dd>
+                        <dt class="col-sm-3">{{#str}} status, mod_classprogress {{/str}}</dt>
+                        <dd class="col-sm-9">{{status}}</dd>
+                        <dt class="col-sm-3">{{#str}} entrycontent, mod_classprogress {{/str}}</dt>
+                        <dd class="col-sm-9">{{{content}}}</dd>
+                        {{#reason}}
+                            <dt class="col-sm-3">{{#str}} entryreason, mod_classprogress {{/str}}</dt>
+                            <dd class="col-sm-9">{{reason}}</dd>
+                            <dt class="col-sm-3">{{#str}} entryreasonnote, mod_classprogress {{/str}}</dt>
+                            <dd class="col-sm-9">{{{note}}}</dd>
+                            <dt class="col-sm-3">{{#str}} entrymeasure, mod_classprogress {{/str}}</dt>
+                            <dd class="col-sm-9">{{{measure}}}</dd>
+                        {{/reason}}
+                        {{#carry}}
+                            <dt class="col-sm-3">{{#str}} entrycarry, mod_classprogress {{/str}}</dt>
+                            <dd class="col-sm-9">{{#str}} yes {{/str}}</dd>
+                        {{/carry}}
+                        <dt class="col-sm-3">{{#str}} writtenon, mod_classprogress {{/str}}</dt>
+                        <dd class="col-sm-9">{{writtenon}}{{#late}} <span class="badge bg-warning text-dark">{{late}}</span>{{/late}}</dd>
+                    </dl>
+                </div>
+            </section>
+        {{/versions}}
+    {{/hasversions}}
+</div>
