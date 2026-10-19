@@ -10,6 +10,8 @@ for the inspection. Only the course's teachers see it; students neither see it o
   dates, holidays and evaluation periods.
 - **Log:** any teacher of the course logs each session (done, partly done, not done with a reason, or an unplanned
   session), also days later; late entries are flagged and every change is kept in a history.
+- **Export:** the plan against what was done, as summary tables on the page (overall, per RA or block, per
+  evaluation period, with coverage and hours) and as an XLSX file with one row per session, for the inspector.
 - **Backup:** a course backup always holds the plan; entries and history only with user data. A course reset can
   remove the entries and keep the plan.
 
