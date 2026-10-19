@@ -63,7 +63,7 @@ final class export_view implements \renderable, \templatable {
             foreach ($this->export->$property as $group) {
                 $cells = [export_service::group_name($group)];
                 foreach (export_service::figures($group->figures) as $value) {
-                    $cells[] = is_float($value) ? format_float($value, 2, true, true) : (string) $value;
+                    $cells[] = is_float($value) ? format_float($value, 3, true, true) : (string) $value;
                 }
                 $rows[] = ['cells' => $cells];
             }

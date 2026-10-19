@@ -489,7 +489,7 @@ final class export_service_test extends \advanced_testcase {
 
     /**
      * The overall "not logged" equals the pending sessions of the log page and of the top-menu overview, and the
-     * export page shows the figures of the file.
+     * export page shows the figures of the file, hours with up to three decimals.
      *
      * @group REQ-EXP-009
      */
@@ -499,6 +499,11 @@ final class export_service_test extends \advanced_testcase {
         $this->setup_course();
         $plan = $this->plan();
         $this->fill((int) $plan->id);
+        // A partly done day of 1.25 hours gives 0.625 hours done and not done: three decimals on the page too.
+        $item = $this->generator()->create_item(['planid' => $plan->id, 'sessiondate' => '2026-10-14', 'block' => 'RA2',
+            'hours' => 1.25]);
+        $this->entry($this->teacher->id, ['planitemid' => $item->id, 'status' => 'partial', 'reason' => 'other',
+            'writtenon' => '2026-10-14']);
 
         $export = export_service::build((int) $this->teacher->id, (int) $plan->id);
 
