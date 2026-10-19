@@ -19,7 +19,8 @@
  *
  * A draft shows its status, the way to import and approve it, its days and its calendar; a draft without a school
  * year asks for one first (REQ-DAT-006). An approved plan shows its session log: pending, logged and upcoming sessions,
- * with links to log each one, to add an unplanned session, to the history of deleted entries and to the plan's days.
+ * with links to log each one, to add an unplanned session, to the history of deleted entries, to the plan's days and
+ * to its export.
  *
  * @package    mod_classprogress
  * @copyright  2026 Jordi Vidal
@@ -70,6 +71,11 @@ if ($plan->status === plan_service::STATUS_APPROVED) {
     $actions[] = html_writer::link(
         new \core\url('/mod/classprogress/plan.php', ['id' => $cm->id]),
         get_string('plandays', 'mod_classprogress'),
+        ['class' => 'btn btn-link']
+    );
+    $actions[] = html_writer::link(
+        new \core\url('/mod/classprogress/export.php', ['id' => $cm->id]),
+        get_string('export', 'mod_classprogress'),
         ['class' => 'btn btn-link']
     );
     echo html_writer::tag('p', implode(' ', $actions), ['data-region' => 'log-actions']);

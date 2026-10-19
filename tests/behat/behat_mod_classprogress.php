@@ -32,7 +32,8 @@ use Behat\Mink\Exception\ExpectationException;
 /**
  * Named pages and steps for the class progress activity.
  *
- * Pages of one activity, by its name: "mod_classprogress > View", "Import", "Approval", "Plan" and "Deleted entries".
+ * Pages of one activity, by its name: "mod_classprogress > View", "Import", "Approval", "Plan", "Deleted entries" and
+ * "Export".
  * The activity's settings are Moodle's "<name>" "classprogress activity editing" page.
  *
  * @package    mod_classprogress
@@ -44,7 +45,7 @@ class behat_mod_classprogress extends behat_base {
     /**
      * Returns the URL of a page of one plan activity.
      *
-     * @param string $type Page type: View, Import, Approval, Plan or Deleted entries.
+     * @param string $type Page type: View, Import, Approval, Plan, Deleted entries or Export.
      * @param string $identifier Name of the activity.
      * @return moodle_url The URL.
      * @throws Exception For an unknown type.
@@ -52,7 +53,7 @@ class behat_mod_classprogress extends behat_base {
     protected function resolve_page_instance_url(string $type, string $identifier): moodle_url {
         $cmid = $this->get_cm_by_activity_name('classprogress', $identifier)->id;
         $pages = ['view' => 'view.php', 'import' => 'import.php', 'approval' => 'approve.php', 'plan' => 'plan.php',
-            'deleted entries' => 'history.php'];
+            'deleted entries' => 'history.php', 'export' => 'export.php'];
         $page = $pages[strtolower($type)] ?? null;
         if ($page === null) {
             throw new Exception("Unrecognised mod_classprogress page type \"{$type}\".");
