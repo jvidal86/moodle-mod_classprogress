@@ -438,8 +438,10 @@ final class export_service_test extends \advanced_testcase {
                 }
             }
         }
+        // Moodle 4.5 from about 4.5.8, and 5.3, put an apostrophe before such text; earlier 4.5 releases write it as is.
+        $escaped = method_exists(\core\dataformat::class, 'escape_spreadsheet_formula');
         foreach (array_merge(self::PAYLOADS, ['=1+1']) as $payload) {
-            $this->assertNotEmpty(array_intersect([$payload, "'" . $payload], $texts), $payload);
+            $this->assertContains($escaped ? "'" . $payload : $payload, $texts);
         }
 
         $zip = new \ZipArchive();
