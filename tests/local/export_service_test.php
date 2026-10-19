@@ -363,6 +363,23 @@ final class export_service_test extends \advanced_testcase {
     }
 
     /**
+     * A course short name with path, quote and line-break characters gives a file name without any of them.
+     *
+     * @group REQ-EXP-002
+     */
+    public function test_the_file_name_drops_unsafe_characters(): void {
+        global $DB;
+
+        $this->setup_course();
+        $plan = $this->plan();
+        $DB->set_field('course', 'shortname', "../C\"1<x>|y\\z/\r\nX-Header: v", ['id' => $plan->course]);
+
+        $export = export_service::build((int) $this->teacher->id, (int) $plan->id);
+
+        $this->assertSame('MP 0372-..C1xyzX-Header v-2026-10-18.xlsx', $export->filename);
+    }
+
+    /**
      * The file has the two sheets in order, each with the header block, then the rows or the three tables with the
      * labels of the layout contract; dates are text and figures numbers.
      *
