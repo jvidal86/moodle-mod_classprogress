@@ -559,6 +559,7 @@ final class export_service_test extends \advanced_testcase {
             $this->assertCount($days, $export->rows);
         }
 
+        $this->assertGreaterThan(0, $counts[5]);
         $this->assertSame($counts[5], $counts[400]);
     }
 }
