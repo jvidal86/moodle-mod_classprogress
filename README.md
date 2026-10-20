@@ -110,7 +110,8 @@ accounts.
   every history row they made.
 - **An erasure** (a deletion request, or deleting the account, which acts at once) anonymises the user's authorship:
   their user id in approvals, imports and history rows is replaced by a deleted user. The content stays, because the
-  plan and its log are the course's shared record for the inspection.
+  plan and its log are the course's shared record for the inspection. The same request deletes the user's school
+  years, which the local plugin keeps (see its README).
 
 ## Known limits
 
