@@ -25,12 +25,12 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'mod_classprogress';
-$plugin->version   = 2026101900;
+$plugin->version   = 2026102000;
 $plugin->requires  = 2024100700; // Moodle 4.5.0.
 $plugin->supported = [405, 503];
-$plugin->release   = '0.1.0';
-$plugin->maturity  = MATURITY_ALPHA;
+$plugin->release   = '0.9.0';
+$plugin->maturity  = MATURITY_BETA;
 $plugin->dependencies = [
     // School years, holidays and evaluation periods, and the plan, calendar and entry rules library.
-    'local_classprogress' => 2026101900,
+    'local_classprogress' => 2026102000,
 ];

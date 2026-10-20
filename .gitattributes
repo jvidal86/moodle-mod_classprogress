@@ -1,4 +1,11 @@
-# Development material stays out of the release zip (built with git archive).
+# Development material stays out of the release zip (built with git archive). The paths this repository does not have
+# yet are listed too, so that the release zip check (.github/scripts/check-release-zip.sh) keeps passing if one is added.
+/PLAN.md export-ignore
+/docs export-ignore
+/prototype export-ignore
+/test-data export-ignore
+/tools export-ignore
 /.github export-ignore
 /.gitattributes export-ignore
 /.gitignore export-ignore
+/.moodle-plugin-ci.yml export-ignore
