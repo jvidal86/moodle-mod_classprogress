@@ -105,6 +105,12 @@ final class plan_service {
     /** @var string Error: a day outside dates::FIRST_DAY to dates::LAST_DAY. Parameter: date. */
     public const OUT_OF_RANGE = 'out_of_range';
 
+    /**
+     * @var string Error, on line 1: the first or the last class day of the settings lies outside the school year, which a
+     *     school year shortened after the settings were saved can cause. Parameters: yearstart, yearend.
+     */
+    public const DATES_OUTSIDE_YEAR = 'dates_outside_year';
+
     /** @var int Longest module code, in characters. */
     public const MAX_CODE = 100;
 
@@ -729,7 +735,34 @@ final class plan_service {
         $holidays = holiday_parser::expand(schoolyear_service::holidays_of((int) $year->id));
         $timetable = self::timetables([(int) $plan->id])[(int) $plan->id];
         $result = (new plan_parser())->parse($text, $holidays, $timetable ?: null, [$year->startdate, $year->enddate]);
-        return self::with_storage_errors($result);
+        return self::with_class_days_in_year(self::with_storage_errors($result), $plan, $year);
+    }
+
+    /**
+     * Adds an error when the first or the last class day of the settings lies outside the school year (REQ-CAL-004).
+     *
+     * The settings form refuses such dates, but the school year can change afterwards; an approved plan could never be
+     * corrected. A text that is not UTF-8 keeps its single error.
+     *
+     * @param plan_result $result The reading.
+     * @param \stdClass $plan The plan row.
+     * @param \stdClass $year The school year row.
+     * @return plan_result The same, with that error first when it applies.
+     */
+    private static function with_class_days_in_year(plan_result $result, \stdClass $plan, \stdClass $year): plan_result {
+        foreach ($result->issues as $issue) {
+            if ($issue->code === plan_issue::NOT_UTF8) {
+                return $result;
+            }
+        }
+        foreach ([(string) $plan->startdate, (string) $plan->enddate] as $date) {
+            if ($date !== '' && !dates::within($date, $year->startdate, $year->enddate)) {
+                $issue = new plan_issue(plan_issue::ERROR, self::DATES_OUTSIDE_YEAR, 1,
+                    ['yearstart' => $year->startdate, 'yearend' => $year->enddate]);
+                return new plan_result($result->module, $result->blocks, $result->days, array_merge([$issue], $result->issues));
+            }
+        }
+        return $result;
     }
 
     /**

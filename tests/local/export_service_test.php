@@ -42,6 +42,10 @@ final class export_service_test extends \advanced_testcase {
     /** @var int The frozen moment: 2026-10-18 10:00 UTC. */
     private const NOW = 1792317600;
 
+    /** @var string[] The header block fields, in order; each one's label is the string exportlabel_<field>. */
+    private const HEADER_FIELDS = ['module', 'course', 'activity', 'schoolyear', 'plandates', 'plannedsessions',
+        'plannedhours', 'exportedby', 'exportedon'];
+
     /** @var string[] The header block labels of both sheets, as in PLAN.md section 5. */
     private const HEADER = ['Module', 'Course', 'Activity', 'School year', 'Plan dates', 'Planned sessions',
         'Planned hours', 'Exported by', 'Exported on'];
@@ -356,7 +360,7 @@ final class export_service_test extends \advanced_testcase {
 
         $export = export_service::build((int) $this->teacher->id, (int) $plan->id);
 
-        $this->assertSame(array_combine(self::HEADER, ['MP 0372 · Gestió de bases de dades', 'Cicle DAM & DAW',
+        $this->assertSame(array_combine(self::HEADER_FIELDS, ['MP 0372 · Gestió de bases de dades', 'Cicle DAM & DAW',
             'Bases de dades', '2026-09-14 to 2027-06-21', '2026-09-14 to 2027-05-28', 10, 18.5, 'Anna Puig',
             '2026-10-18 12:00']), $export->header);
         $this->assertSame('MP 0372-C1-2026-10-18.xlsx', $export->filename);
@@ -377,6 +381,34 @@ final class export_service_test extends \advanced_testcase {
         $export = export_service::build((int) $this->teacher->id, (int) $plan->id);
 
         $this->assertSame('MP 0372-..C1xyzX-Header v-2026-10-18.xlsx', $export->filename);
+    }
+
+    /**
+     * Two header labels that a site's language customisation makes the same still give two rows, in both sheets (R5-4).
+     *
+     * @group REQ-EXP-002
+     */
+    public function test_header_labels_translated_alike_keep_every_row(): void {
+        global $CFG;
+
+        $this->setup_course();
+        $plan = $this->plan();
+        $this->fill((int) $plan->id);
+        $dir = $CFG->langlocalroot . '/en_local';
+        check_dir_exists($dir);
+        file_put_contents("$dir/classprogress.php", "<?php\n\$string['exportlabel_course'] = 'Activity';\n");
+        get_string_manager()->reset_caches(true);
+        try {
+            [$book] = self::read_back(export_service::build((int) $this->teacher->id, (int) $plan->id));
+        } finally {
+            unlink("$dir/classprogress.php");
+            get_string_manager()->reset_caches(true);
+        }
+
+        $labels = array_replace(self::HEADER, [1 => 'Activity']);
+        foreach ($book->getAllSheets() as $sheet) {
+            $this->assertSame($labels, array_column(array_slice(self::values($sheet), 0, 9), 0), $sheet->getTitle());
+        }
     }
 
     /**

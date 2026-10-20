@@ -32,8 +32,8 @@ final class plan_export {
      *
      * @param \stdClass $plan The plan row.
      * @param string $today The exporting teacher's own day, yyyy-mm-dd.
-     * @param array $header Label => value of the header block, in order: text, or a number for the planned sessions
-     *     and hours.
+     * @param array $header Field => value of the header block, in order (the label is the string exportlabel_<field>):
+     *     text, or a number for the planned sessions and hours.
      * @param array[] $rows The Plan vs done rows, in order, each with the export_service::COLUMNS keys: text (empty
      *     for none), hours a float and dayslate an int (null for none).
      * @param summary_group[] $overall The overall table.
@@ -46,7 +46,7 @@ final class plan_export {
         public readonly \stdClass $plan,
         /** @var string The exporting teacher's own day, yyyy-mm-dd. */
         public readonly string $today,
-        /** @var array Label => value of the header block, in order. */
+        /** @var array Field => value of the header block, in order. */
         public readonly array $header,
         /** @var array[] The Plan vs done rows, in order, each with the export_service::COLUMNS keys. */
         public readonly array $rows,

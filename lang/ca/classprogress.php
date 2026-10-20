@@ -180,6 +180,7 @@ $string['importplan'] = 'Importa el text de la programació';
 $string['importplanintro'] = 'Enganxeu a sota el text de la programació, o pengeu-lo com a fitxer Markdown (.md) o de text, i després premeu «Previsualitza». No es desa res fins que no premeu «Desa l\'esborrany» després de la previsualització.';
 $string['issue_bad_date'] = 'L\'encapçalament del dia «{$a->text}» no té cap data llegible. Escriviu la data com a 2026-09-16 o 16/09/2026, si voleu precedida d\'un dia de la setmana, com ara dl o dt.';
 $string['issue_block_too_long'] = 'L\'encapçalament de RA o bloc que hi ha a sobre d\'aquest dia té més de {$a->max} caràcters.';
+$string['issue_dates_outside_year'] = 'El primer o l\'últim dia de classe de la configuració de l\'activitat queda fora del curs escolar ({$a->yearstart} a {$a->yearend}). Canvieu els dies de classe a la configuració, o el curs escolar, abans d\'importar o aprovar.';
 $string['issue_empty_day'] = 'El dia {$a->date} no té cap text a la programació.';
 $string['issue_missing_hours'] = 'El dia {$a->date} no té hores, i l\'horari no en té cap per a aquell dia de la setmana.';
 $string['issue_module_too_long'] = 'L\'encapçalament del mòdul és massa llarg: el codi pot tenir fins a 100 caràcters i el títol, fins a 255.';

@@ -112,13 +112,14 @@ function classprogress_reset_course_form_definition(&$mform) {
 }
 
 /**
- * The default of the reset option: the entries are removed with the other user data.
+ * The default of the reset option: the entries are kept, since they are the course's record for the inspection and a
+ * year-end reset with the defaults should not wipe them (R5-3); the person resetting ticks the option to remove them.
  *
  * @param stdClass $course The course.
  * @return array Option => default.
  */
 function classprogress_reset_course_form_defaults($course) {
-    return ['reset_classprogress_entries' => 1];
+    return ['reset_classprogress_entries' => 0];
 }
 
 /**

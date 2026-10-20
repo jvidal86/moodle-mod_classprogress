@@ -180,6 +180,7 @@ $string['importplan'] = 'Import plan text';
 $string['importplanintro'] = 'Paste the text of the plan below, or upload it as a Markdown (.md) or text file, then press Preview. Nothing is saved until you press Save draft after the preview.';
 $string['issue_bad_date'] = 'The day heading "{$a->text}" has no date that can be read. Write the date as 2026-09-16 or 16/09/2026, optionally after a weekday such as dl or Mon.';
 $string['issue_block_too_long'] = 'The RA or block heading above this day is longer than {$a->max} characters.';
+$string['issue_dates_outside_year'] = 'The first or the last class day in the activity settings is outside the school year ({$a->yearstart} to {$a->yearend}). Change the class days in the settings, or the school year, before importing or approving.';
 $string['issue_empty_day'] = 'The day {$a->date} has no plan text.';
 $string['issue_missing_hours'] = 'The day {$a->date} has no hours, and the timetable has none for that weekday.';
 $string['issue_module_too_long'] = 'The module heading is too long: the code can have up to 100 characters and the title up to 255.';

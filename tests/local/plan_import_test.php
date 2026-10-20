@@ -615,6 +615,42 @@ final class plan_import_test extends \advanced_testcase {
     }
 
     /**
+     * The class days of the settings must lie inside the school year also when the school year is shortened after the
+     * settings were saved: the preview shows the error, and neither import nor approval goes through (R5-1).
+     *
+     * @group REQ-CAL-004
+     * @group REQ-IMP-004
+     */
+    public function test_class_days_outside_a_shortened_school_year_block_import_and_approval(): void {
+        $this->resetAfterTest();
+        [$user, $id] = $this->draft();
+        plan_service::import($user->id, $id, self::PLAN);
+        $year = schoolyear_service::get($user->id, plan_service::get($user->id, $id)->schoolyearid);
+        schoolyear_service::update($user->id, $year->id, (object) ['name' => $year->name, 'startdate' => $year->startdate,
+            'enddate' => '2027-03-31']);
+
+        $result = plan_service::check_stored($user->id, $id);
+        $this->assertContains('error dates_outside_year 1', self::issues($result));
+        $issue = array_values(array_filter($result->issues, fn(plan_issue $i): bool => $i->code === 'dates_outside_year'))[0];
+        $this->assertSame(['yearstart' => '2026-09-14', 'yearend' => '2027-03-31'], $issue->params);
+        foreach ([fn() => self::approve($user->id, $id), fn() => plan_service::import($user->id, $id, self::PLAN)] as $write) {
+            try {
+                $write();
+                $this->fail('Expected an exception');
+            } catch (\moodle_exception $e) {
+                $this->assertSame('error_planhaserrors', $e->errorcode);
+            }
+        }
+        $this->assertSame('draft', plan_service::get($user->id, $id)->status);
+
+        plan_service::update($user->id, $id, (object) ['name' => 'Bases de dades', 'schoolyearid' => $year->id,
+            'startdate' => '2026-09-14', 'enddate' => '2027-03-26', 'timetable' => [0 => 2, 4 => 2]]);
+        $this->assertNotContains('error dates_outside_year 1', self::issues(plan_service::check_stored($user->id, $id)));
+        self::approve($user->id, $id);
+        $this->assertSame('approved', plan_service::get($user->id, $id)->status);
+    }
+
+    /**
      * Approval is refused when what the teacher saw is not what would be approved: a holiday added in the meantime
      * changes the warnings.
      *

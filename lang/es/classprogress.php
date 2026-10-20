@@ -180,6 +180,7 @@ $string['importplan'] = 'Importar el texto de la programación';
 $string['importplanintro'] = 'Pegue abajo el texto de la programación o súbalo como archivo Markdown (.md) o de texto, y pulse Vista previa. No se guarda nada hasta que pulse Guardar borrador después de la vista previa.';
 $string['issue_bad_date'] = 'El encabezado de día "{$a->text}" no tiene una fecha que se pueda leer. Escriba la fecha como 2026-09-16 o 16/09/2026, opcionalmente precedida de un día de la semana, como lun o dl.';
 $string['issue_block_too_long'] = 'El encabezado de RA o bloque que hay encima de este día tiene más de {$a->max} caracteres.';
+$string['issue_dates_outside_year'] = 'El primer o el último día de clase de la configuración de la actividad queda fuera del curso escolar ({$a->yearstart} a {$a->yearend}). Cambie los días de clase en la configuración, o el curso escolar, antes de importar o aprobar.';
 $string['issue_empty_day'] = 'El día {$a->date} no tiene texto de programación.';
 $string['issue_missing_hours'] = 'El día {$a->date} no tiene horas, y el horario no tiene ninguna para ese día de la semana.';
 $string['issue_module_too_long'] = 'El encabezado del módulo es demasiado largo: el código puede tener hasta 100 caracteres y el título, hasta 255.';

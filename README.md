@@ -14,8 +14,9 @@ which keeps each teacher's school years and the "Class progress" page in the top
   session), also days later; late entries are flagged and every change is kept in a history.
 - **Export:** the plan against what was done, as summary tables on the page (overall, per RA or block, per
   evaluation period, with coverage and hours) and as an XLSX file with one row per session, for the inspector.
-- **Backup:** a course backup always holds the plan; entries and history only with user data. A course reset can
-  remove the entries and keep the plan.
+- **Backup:** a course backup always holds the plan; entries and history only with user data. A course reset keeps
+  the entries unless its "Delete the logged sessions and their history" option is ticked (it is not by default); the
+  plan always stays.
 
 ## Requirements
 
@@ -68,7 +69,8 @@ Site administration > Plugins > Activity modules > Class progress:
 
 A value of 0, or one left empty, means the default.
 
-Fixed limits, checked on import and when the activity settings are saved:
+Fixed limits, checked when the activity settings are saved and again on import and approval (so a school year
+shortened later is caught before the plan is locked):
 
 - Every date lies between 2000-01-01 and 2099-12-31, and the first and last class day lie within the school year.
 - The activity name, the module title, an RA or block heading and a day's title are at most 255 characters long; the

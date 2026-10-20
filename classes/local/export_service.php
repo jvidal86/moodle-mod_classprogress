@@ -276,7 +276,8 @@ final class export_service {
      * @param \stdClass $plan The plan row.
      * @param int $sessions Planned sessions.
      * @param summary_figures $overall The overall figures.
-     * @return array Label => value, in order.
+     * @return array Field (module, course, ..., exportedon; the label is the string exportlabel_<field>) => value, in
+     *     order.
      */
     private static function header(int $userid, \stdClass $plan, int $sessions, summary_figures $overall): array {
         $user = \core_user::get_user($userid, '*', MUST_EXIST);
@@ -298,11 +299,7 @@ final class export_service {
             'exportedby' => fullname($user),
             'exportedon' => (new \DateTimeImmutable('@' . $now))->setTimezone($zone)->format('Y-m-d H:i'),
         ];
-        $header = [];
-        foreach ($values as $key => $value) {
-            $header[get_string('exportlabel_' . $key, 'mod_classprogress')] = $value;
-        }
-        return $header;
+        return $values;
     }
 
     /**
@@ -339,8 +336,9 @@ final class export_service {
      */
     private static function write_header(\MoodleExcelWorksheet $sheet, plan_export $export, \MoodleExcelFormat $bold): int {
         $row = 0;
-        foreach ($export->header as $label => $value) {
-            $sheet->write_string($row, 0, (string) $label, $bold);
+        foreach ($export->header as $field => $value) {
+            // Keyed by field, not by label: two labels a site translates alike must not merge into one row (R5-4).
+            $sheet->write_string($row, 0, get_string('exportlabel_' . $field, 'mod_classprogress'), $bold);
             self::write_cells($sheet, $row++, [null, $value]);
         }
         return $row + 1;

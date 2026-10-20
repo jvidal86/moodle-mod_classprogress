@@ -190,7 +190,7 @@ final class lib_test extends \advanced_testcase {
 
     /**
      * A course reset that removes user data deletes the activities' entries and history and keeps their plans; without
-     * the option nothing goes.
+     * the option nothing goes, and the option is not ticked by default (R5-3).
      *
      * @group REQ-MOD-007
      */
@@ -224,7 +224,7 @@ final class lib_test extends \advanced_testcase {
         $this->assertSame(['entry' => 0, 'hist' => 0, 'item' => 1], $counts($planids[0]));
         $this->assertSame(['entry' => 1, 'hist' => 1, 'item' => 1], $counts($planids[1]));
         $this->assertSame('approved', $DB->get_field('classprogress', 'status', ['id' => $planids[0]]));
-        $this->assertSame(['reset_classprogress_entries' => 1], classprogress_reset_course_form_defaults($course));
+        $this->assertSame(['reset_classprogress_entries' => 0], classprogress_reset_course_form_defaults($course));
     }
 
     /**
