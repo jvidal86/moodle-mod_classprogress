@@ -10,7 +10,7 @@ which keeps each teacher's school years and the "Class progress" page in the top
   pasted or uploaded), reads the preview with its errors and warnings, and approves it. An approved plan is locked:
   its days, hours, text, school year and timetable never change, and it keeps its own copy of the school year's
   dates, holidays and evaluation periods.
-- **Log:** any teacher of the course logs each session (done, partly done, not done with a reason, or an unplanned
+- **Log:** any teacher of the course logs each session (done; partly done or not done, with a reason; or an unplanned
   session), also days later; late entries are flagged and every change is kept in a history.
 - **Export:** the plan against what was done, as summary tables on the page (overall, per RA or block, per
   evaluation period, with coverage and hours) and as an XLSX file with one row per session, for the inspector.
@@ -47,8 +47,10 @@ git clone https://github.com/jvidal86/moodle-mod_classprogress.git mod/classprog
 git -C mod/classprogress checkout v0.9.0
 ```
 
-Then run the upgrade: visit Site administration > Notifications, or run `php admin/cli/upgrade.php` from the Moodle
-folder (the `admin/cli` folder stays at the top on 5.x too).
+Then run the upgrade: visit Site administration > Notifications, or run `php admin/cli/upgrade.php --non-interactive`
+from the Moodle folder (the `admin/cli` folder stays at the top on 5.x too; without `--non-interactive` the script waits
+for a confirmation). Site administration > Plugins > Plugins overview then lists "Class progress" under Activity
+modules at version 0.9.0, maturity Beta (the local plugin is listed as "Class progress" too, under Local plugins).
 
 ## Languages
 
@@ -80,9 +82,18 @@ shortened later is caught before the plan is locked):
 
 ## Uninstall
 
-Uninstall this activity first, then the local plugin (Site administration > Plugins > Plugins overview): Moodle refuses
-the other order, because this activity depends on the local plugin. Then delete the `mod/classprogress` folder
-(`public/mod/classprogress` on 5.x), or Moodle installs the activity again at the next upgrade.
+Uninstall this activity first, then the local plugin. Moodle refuses the other order, and it also refuses the local
+plugin while this activity's folder is still on disk, so delete each folder right after its plugin is uninstalled:
+
+1. Uninstall this activity: Site administration > Plugins > Plugins overview, "Class progress" under Activity modules,
+   Uninstall; or `php admin/cli/uninstall_plugins.php --plugins=mod_classprogress --run`. Then delete the
+   `mod/classprogress` folder (`public/mod/classprogress` on 5.x).
+2. Uninstall the local plugin the same way ("Class progress" under Local plugins, or `--plugins=local_classprogress`),
+   then delete the `local/classprogress` folder (`public/local/classprogress` on 5.x). A folder left in place is
+   installed again at the next upgrade.
+3. Run the upgrade (Site administration > Notifications, or `php admin/cli/upgrade.php --non-interactive`). It clears
+   the plugins' cached settings and hook; until then the site says it needs upgrading, and with developer debugging on
+   its pages can stop with an error about the missing hook class.
 
 Uninstalling deletes all of its data in every course, and it cannot be undone: every plan with its days, imports,
 copies of holidays and evaluation periods, entries and history (and uninstalling the local plugin deletes the school
@@ -113,7 +124,8 @@ accounts.
 - **An erasure** (a deletion request, or deleting the account, which acts at once) anonymises the user's authorship:
   their user id in approvals, imports and history rows is replaced by a deleted user. The content stays, because the
   plan and its log are the course's shared record for the inspection. The same request deletes the user's school
-  years, which the local plugin keeps (see its README).
+  years, which the local plugin keeps (see its README). A deletion request processed through Data requests also deletes
+  the user's account afterwards: Moodle does that, not the plugin.
 
 ## Known limits
 
@@ -137,9 +149,9 @@ accounts.
 
 Plan, requirements, documentation and test data live in the `local_classprogress` repository (`PLAN.md`,
 `docs/spec/REQUIREMENTS.md`, `docs/DEV_ENVIRONMENT.md`, `docs/TESTING_STRATEGY.md`). The fixtures in `tests/fixtures/`
-are a copy of its `test-data/`, made with its `tools/sync_fixtures.sh ~/PROJECTS/moodle-mod_classprogress/tests/fixtures`
-(add `--check` to compare). Its `tools/check_traceability.py --extra-root ~/PROJECTS/moodle-mod_classprogress` counts
-the tests of this repository too. Changes are listed in `CHANGES.md`.
+are a copy of its `test-data/`, made with its `tools/sync_fixtures.sh <this repository>/tests/fixtures`
+(add `--check` to compare). Its `tools/check_traceability.py --extra-root <this repository>` counts the tests of this
+repository too. Changes are listed in `CHANGES.md`.
 
 ## License
 
