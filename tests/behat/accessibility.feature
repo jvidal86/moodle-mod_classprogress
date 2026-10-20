@@ -128,3 +128,23 @@ Feature: The activity pages meet the accessibility standards
     And I am on the "local_classprogress > Home" page
     And I should see "Approved" in the "Bases de dades" "table_row"
     And the page should meet accessibility standards
+
+  Scenario: A session is logged and the export tables are reached with the keyboard alone
+    Given the following "activities" exist:
+      | activity      | course | name           | schoolyear     | status   |
+      | classprogress | C1     | Bases de dades | Curs 2026-2027 | approved |
+    And the following "mod_classprogress > plan items" exist:
+      | plan           | sessiondate | block | title       | content          | hours |
+      | Bases de dades | 2026-09-14  | RA1   | Presentació | Normes de l'aula | 2     |
+    And I am on the "Bases de dades" "classprogress activity" page logged in as "teacher1"
+    When I set the focus on the "[data-region='log-pending'] a" "css_element"
+    And I press the enter key
+    Then I should see "Normes de l'aula"
+    And I set the field "What was done" to "Normes explicades"
+    And I set the focus on the "Save entry" "button"
+    And I press the enter key
+    Then I should not see "Presentació" in the "[data-region='log-pending']" "css_element"
+    And I am on the "Bases de dades" "mod_classprogress > Export" page
+    When I set the focus on the "Download the spreadsheet (XLSX)" "link"
+    And I press the tab key
+    Then the focused element is "[role='region'][tabindex='0']" "css_element"
