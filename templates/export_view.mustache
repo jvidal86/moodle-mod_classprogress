@@ -43,8 +43,9 @@
     </p>
     {{#tables}}
         <section class="mt-4" data-region="{{id}}">
-            <h3>{{title}}</h3>
-            <div class="table-responsive">
+            <h3 id="{{id}}-title">{{title}}</h3>
+            {{! A wide table scrolls sideways; the keyboard reaches its scroll area, named by the heading. }}
+            <div class="table-responsive" tabindex="0" role="region" aria-labelledby="{{id}}-title">
                 <table class="generaltable" id="{{id}}">
                     <thead>
                         <tr>
