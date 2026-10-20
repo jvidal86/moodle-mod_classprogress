@@ -68,4 +68,51 @@ final class log_view_test extends \advanced_testcase {
         $this->assertStringNotContainsString('<script', $html);
         $this->assertDoesNotMatchRegularExpression('/<img[^>]*onerror/i', $html);
     }
+
+    /**
+     * A date with two planned days (REQ-PLN-010) shows both sessions on the log, in plan order, each with its own link,
+     * and each is logged with its own entry; after both, nothing is pending (R3-2).
+     *
+     * @group REQ-PLN-010
+     * @group REQ-LOG-001
+     * @group REQ-LOG-005
+     */
+    public function test_a_date_with_two_planned_days_shows_and_logs_both(): void {
+        global $PAGE;
+
+        $this->resetAfterTest();
+        $this->mock_clock_with_frozen(1792317600);
+        $course = $this->getDataGenerator()->create_course();
+        $user = $this->getDataGenerator()->create_and_enrol($course, 'editingteacher');
+        $this->setUser($user);
+        $gen = $this->getDataGenerator()->get_plugin_generator('mod_classprogress');
+        $plan = $gen->create_instance(['course' => $course->id, 'status' => 'approved']);
+        $first = $gen->create_item(['planid' => $plan->id, 'sessiondate' => '2026-10-15', 'title' => 'Primera hora']);
+        $second = $gen->create_item(['planid' => $plan->id, 'sessiondate' => '2026-10-15', 'title' => 'Segona hora']);
+        $renderer = $PAGE->get_renderer('core');
+        $log = fn(): \stdClass => (new log_view(entry_service::log($user->id, (int) $plan->id)))->export_for_template($renderer);
+        $itemid = fn(string $url): int => (int) (new \core\url($url))->get_param('itemid');
+
+        $before = $log();
+        $this->assertSame(['Primera hora', 'Segona hora'], array_column($before->pending, 'title'));
+        $this->assertSame(['2026-10-15', '2026-10-15'], array_column($before->pending, 'date'));
+        $this->assertSame([(int) $first->id, (int) $second->id], array_map($itemid, array_column($before->pending, 'logurl')));
+
+        $done = new entry_data(entry_rules::DONE, 'Primera part feta');
+        $firstentry = entry_service::create($user->id, (int) $plan->id, (int) $first->id, $done);
+        $between = $log();
+        $this->assertSame(['Segona hora'], array_column($between->pending, 'title'));
+        $this->assertSame(['Primera hora'], array_column($between->logged, 'title'));
+
+        $partial = new entry_data(entry_rules::PARTIAL, 'Segona part a mitges', 'incident');
+        $secondentry = entry_service::create($user->id, (int) $plan->id, (int) $second->id, $partial);
+        $after = $log();
+        $this->assertSame([], $after->pending);
+        $this->assertSame(['Primera hora', 'Segona hora'], array_column($after->logged, 'title'));
+        $this->assertSame([get_string('entrystatus_done', 'mod_classprogress'),
+            get_string('entrystatus_partial', 'mod_classprogress')], array_column($after->logged, 'status'));
+        $this->assertNotSame($firstentry, $secondentry);
+        $this->assertSame($firstentry, (int) entry_service::for_item($user->id, (int) $first->id)->id);
+        $this->assertSame($secondentry, (int) entry_service::for_item($user->id, (int) $second->id)->id);
+    }
 }
