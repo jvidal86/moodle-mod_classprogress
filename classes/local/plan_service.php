@@ -757,8 +757,8 @@ final class plan_service {
         }
         foreach ([(string) $plan->startdate, (string) $plan->enddate] as $date) {
             if ($date !== '' && !dates::within($date, $year->startdate, $year->enddate)) {
-                $issue = new plan_issue(plan_issue::ERROR, self::DATES_OUTSIDE_YEAR, 1,
-                    ['yearstart' => $year->startdate, 'yearend' => $year->enddate]);
+                $params = ['yearstart' => $year->startdate, 'yearend' => $year->enddate];
+                $issue = new plan_issue(plan_issue::ERROR, self::DATES_OUTSIDE_YEAR, 1, $params);
                 return new plan_result($result->module, $result->blocks, $result->days, array_merge([$issue], $result->issues));
             }
         }
