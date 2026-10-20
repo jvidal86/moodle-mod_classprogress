@@ -88,4 +88,79 @@ class behat_mod_classprogress extends behat_base {
         // The check that Behat runs after every step fails on any page with an error box.
         $this->getSession()->visit($previous);
     }
+
+    /**
+     * Sets a field to the text of one of the activity's test fixtures, such as a real plan or a school's holidays.
+     *
+     * @When I set the field :field to the fixture :path
+     *
+     * @param string $field Field label or name.
+     * @param string $path File under tests/fixtures, such as plans/0372.md.
+     * @throws Exception For a path outside tests/fixtures or a missing file.
+     */
+    public function i_set_the_field_to_the_fixture(string $field, string $path): void {
+        $file = __DIR__ . '/../fixtures/' . $path;
+        if (str_contains($path, '..') || !is_file($file)) {
+            throw new Exception("No fixture \"{$path}\" in tests/fixtures.");
+        }
+        $this->execute('behat_forms::i_set_the_field_to', [$field, file_get_contents($file)]);
+    }
+
+    /**
+     * Checks that the log page, the top-menu overview and the export page give the same number of pending sessions of
+     * a plan activity, and that there are some (REQ-EXP-009, REQ-MOD-005).
+     *
+     * The number depends on today's date, so a scenario on a real plan with fixed dates compares the three pages
+     * instead of expecting a number.
+     *
+     * @Then the log, the overview and the export of :identifier show the same number of pending sessions
+     *
+     * @param string $identifier Name of the activity.
+     * @throws ExpectationException When a page lacks the number or the numbers differ.
+     */
+    public function the_pending_sessions_agree(string $identifier): void {
+        $session = $this->getSession();
+        $previous = $session->getCurrentUrl();
+        $name = behat_context_helper::escape($identifier);
+        $notlogged = behat_context_helper::escape(get_string('exportfig_notlogged', 'mod_classprogress'));
+        $counts = [];
+
+        $this->visit_page($this->resolve_page_instance_url('View', $identifier));
+        $counts['log page'] = (string) count($session->getPage()->findAll('css', "[data-region='log-pending'] tbody tr"));
+
+        $this->visit_page(new moodle_url('/local/classprogress/index.php'));
+        $counts['overview'] = $this->cell_text(
+            "//section[@data-region='plan-activities']//tbody/tr[td[1][normalize-space(.) = {$name}]]/td[4]"
+        );
+
+        $this->visit_page($this->resolve_page_instance_url('Export', $identifier));
+        $column = "count(//table[@id='export-overall']//thead//th[normalize-space(.) = {$notlogged}]/preceding-sibling::th) + 1";
+        $counts['export'] = $this->cell_text("//table[@id='export-overall']//tbody/tr[1]/td[{$column}]");
+
+        $session->visit($previous);
+        if (count(array_unique($counts)) !== 1 || (int) $counts['log page'] < 1) {
+            throw new ExpectationException('Pending sessions of "' . $identifier . '" differ or are none: ' .
+                json_encode($counts), $session);
+        }
+    }
+
+    /**
+     * Opens a page of the site.
+     *
+     * @param moodle_url $url The page.
+     */
+    private function visit_page(moodle_url $url): void {
+        $this->getSession()->visit($this->locate_path($url->out_as_local_url(false)));
+    }
+
+    /**
+     * The text of a table cell of the current page.
+     *
+     * @param string $xpath XPath of the cell.
+     * @return string|null Its text, trimmed; null when the page has no such cell.
+     */
+    private function cell_text(string $xpath): ?string {
+        $cell = $this->getSession()->getPage()->find('xpath', $xpath);
+        return $cell ? trim($cell->getText()) : null;
+    }
 }
