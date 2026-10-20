@@ -90,6 +90,35 @@ class behat_mod_classprogress extends behat_base {
     }
 
     /**
+     * Changes the settings of a plan activity as another tab or session would, after the current page was opened.
+     *
+     * @Given the plan activity :name is changed elsewhere
+     *
+     * @param string $name Name of the activity.
+     */
+    public function the_plan_activity_is_changed_elsewhere(string $name): void {
+        global $DB;
+
+        $plan = $DB->get_record('classprogress', ['name' => $name], '*', MUST_EXIST);
+        $DB->set_field('classprogress', 'timemodified', $plan->timemodified + 1, ['id' => $plan->id]);
+    }
+
+    /**
+     * Changes the entry of a planned day as another tab or session would, after the current page was opened.
+     *
+     * @Given the entry of :title is changed elsewhere
+     *
+     * @param string $title Title of the plan item the entry belongs to.
+     */
+    public function the_entry_is_changed_elsewhere(string $title): void {
+        global $DB;
+
+        $itemid = $DB->get_field('classprogress_item', 'id', ['title' => $title], MUST_EXIST);
+        $entry = $DB->get_record('classprogress_entry', ['planitemid' => $itemid], '*', MUST_EXIST);
+        $DB->set_field('classprogress_entry', 'timemodified', $entry->timemodified + 1, ['id' => $entry->id]);
+    }
+
+    /**
      * Sets a field to the text of one of the activity's test fixtures, such as a real plan or a school's holidays.
      *
      * @When I set the field :field to the fixture :path

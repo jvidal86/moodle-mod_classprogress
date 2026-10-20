@@ -141,3 +141,17 @@ Feature: Add a plan activity to a course, import its plan, approve it and find i
     And I am on the "local_classprogress > Home" page
     And I should see "Approved" in the "Bases de dades" "table_row"
     And I should see "Course 1" in the "Bases de dades" "table_row"
+
+  @REQ-DAT-003
+  Scenario: Saving the settings of a plan activity that was changed elsewhere after the form was opened is refused and saves nothing
+    Given the following "activities" exist:
+      | activity      | course | name           | schoolyear     | hours0 |
+      | classprogress | C1     | Bases de dades | Curs 2026-2027 | 2      |
+    And I am on the "Bases de dades" "classprogress activity editing" page logged in as "teacher1"
+    And the plan activity "Bases de dades" is changed elsewhere
+    When I set the field "Name" to "Bases de dades II"
+    And I press "Save and display"
+    Then I should see "This was changed elsewhere; reload to see the latest version"
+    And I am on the "Course 1" "course" page
+    And I should see "Bases de dades"
+    And I should not see "Bases de dades II"

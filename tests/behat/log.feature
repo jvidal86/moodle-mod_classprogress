@@ -87,3 +87,28 @@ Feature: Log what was done in each session
     And "Edited" "text" should appear before "Created" "text"
     And I should see "Normes i prova diagnòstica"
     And I should see "Normes explicades"
+
+  @REQ-LOG-005 @REQ-DAT-003
+  Scenario: Saving or deleting an entry that was changed elsewhere after its page was opened is refused and changes nothing
+    Given the following "mod_classprogress > entries" exist:
+      | planitem    | content           | user     |
+      | Presentació | Normes explicades | teacher1 |
+    And I am on the "Bases de dades" "classprogress activity" page logged in as "teacher1"
+    When I click on "Edit entry" "link" in the "Presentació" "table_row"
+    And the entry of "Presentació" is changed elsewhere
+    And I set the field "What was done" to "Normes i prova diagnòstica"
+    And I press "Save entry"
+    Then I should see "This was changed elsewhere; reload to see the latest version"
+    And the field "What was done" matches value "Normes i prova diagnòstica"
+    And I am on the "Bases de dades" "classprogress activity" page
+    When I click on "Edit entry" "link" in the "Presentació" "table_row"
+    And I click on "Delete entry" "link"
+    And the entry of "Presentació" is changed elsewhere
+    And I press "Continue"
+    Then I should see "This was changed elsewhere; reload to see the latest version"
+    And I am on the "Bases de dades" "classprogress activity" page
+    And I should see "Presentació" in the "[data-region='log-logged']" "css_element"
+    When I click on "History" "link" in the "Presentació" "table_row"
+    Then I should see "Normes explicades"
+    And I should not see "Normes i prova diagnòstica"
+    And I should not see "Deleted"
