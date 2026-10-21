@@ -21,12 +21,12 @@ use local_classprogress\local\written_on;
 use mod_classprogress\local\access;
 
 /**
- * What the entry page shows above its form: the planned day, read-only; what the previous partial session left over;
- * and, once the entry is saved, its written-on day, late flag and last-edited time, with links to delete it and to
- * its history.
+ * What the entry page shows around its form: above it, the planned day, read-only, and what the previous partial
+ * session left over (template mod_classprogress/entry_context); after it, once the entry is saved, its written-on day,
+ * late flag and last-edited time, with links to delete it and to its history (mod_classprogress/entry_written).
  *
- * Block and day titles are exported as typed, for the template to escape. The planned content and the left-over go
- * through format_text() as Markdown with cleaning on.
+ * The block is exported as typed, for the template to escape. The planned content and the left-over go through
+ * format_text() as Markdown with cleaning on.
  *
  * @package    mod_classprogress
  * @copyright  2026 Jordi Vidal
@@ -67,9 +67,7 @@ final class entry_context implements \renderable, \templatable {
         $entry = $this->entry;
         return (object) [
             'hasitem' => $item !== null,
-            'date' => $item?->sessiondate,
             'block' => $item?->block,
-            'title' => $item?->title,
             'hours' => $item === null || $item->hours === null ? '' : format_float((float) $item->hours, 2, true, true),
             'content' => $item === null ? '' : format_text($item->content, FORMAT_MARKDOWN, ['context' => $context]),
             'hasleftover' => $this->leftover !== null,

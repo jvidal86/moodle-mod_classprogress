@@ -95,7 +95,7 @@ Feature: The activity pages meet the accessibility standards
     When I click on "Log" "link" in the "Entorn" "table_row"
     Then the page should meet accessibility standards
     When I set the following fields to these values:
-      | Status        | Partly done   |
+      | Partly done   | 1             |
       | What was done | Només l'IDE   |
     And I press "Save entry"
     Then I should see "Choose why the session was not fully done."

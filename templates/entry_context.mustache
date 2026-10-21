@@ -17,35 +17,25 @@
 {{!
     @template mod_classprogress/entry_context
 
-    What the entry page shows above its form: the planned day, the left-over of the previous session, and the saved
-    entry's written-on day, late flag and links.
+    What the entry page shows above its form: the planned day, whose date and title are the page's heading, and the
+    left-over of the previous session. The saved entry's written-on day and links follow the form
+    (mod_classprogress/entry_written, from the same context).
 
     Context variables required for this template:
     * hasitem - Whether the entry is for a plan item.
-    * date, block, title - The item's day, and its block and title as typed (escaped here).
+    * block - The item's block as typed (escaped here).
     * hours - Planned hours; empty when unknown.
     * content - The day's plan, already through format_text().
     * hasleftover, leftover - What the previous session left over, already through format_text().
-    * hasentry - Whether the entry is saved.
-    * writtenon, late, lastedited - Sentences about the saved entry; late is empty when it was not late.
-    * deleteurl, historyurl - Links to delete the entry and to see its history.
 
     Example context (json):
     {
         "hasitem": true,
-        "date": "2026-10-16",
         "block": "RA1 · Reconeix els elements",
-        "title": "Entorn",
         "hours": "2",
         "content": "<ul><li>Instal·lació de l'IDE</li></ul>",
         "hasleftover": true,
-        "leftover": "<p>Mig exercici 3</p>",
-        "hasentry": true,
-        "writtenon": "Written on 2026-10-18.",
-        "late": "Late by 2 days",
-        "lastedited": "Last edited Sunday, 18 October 2026, 12:00 PM.",
-        "deleteurl": "https://example.com/local/classprogress/entry.php?id=1&action=delete",
-        "historyurl": "https://example.com/local/classprogress/history.php?id=1"
+        "leftover": "<p>Mig exercici 3</p>"
     }
 }}
 <div class="mod_classprogress-entry">
@@ -53,7 +43,7 @@
         <section class="card mb-3" data-region="planned-day">
             <div class="card-body">
                 <h4 class="card-title">{{#str}} plannedday, mod_classprogress {{/str}}</h4>
-                <p class="text-muted">{{date}}{{#hours}} · {{hours}} h{{/hours}}{{#block}} · {{block}}{{/block}}{{#title}} · {{title}}{{/title}}</p>
+                <p class="text-muted">{{#hours}}{{hours}} h{{#block}} · {{/block}}{{/hours}}{{block}}</p>
                 {{{content}}}
             </div>
         </section>
@@ -64,13 +54,4 @@
             {{{leftover}}}
         </section>
     {{/hasleftover}}
-    {{#hasentry}}
-        <p data-region="entry-written">
-            {{writtenon}}{{#late}} <span class="badge bg-warning text-dark">{{late}}</span>{{/late}} {{lastedited}}
-        </p>
-        <p>
-            <a class="btn btn-secondary" href="{{historyurl}}">{{#str}} history, mod_classprogress {{/str}}</a>
-            <a class="btn btn-link" href="{{deleteurl}}">{{#str}} deleteentry, mod_classprogress {{/str}}</a>
-        </p>
-    {{/hasentry}}
 </div>

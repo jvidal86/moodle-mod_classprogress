@@ -18,6 +18,7 @@ namespace mod_classprogress\output;
 
 use core\url;
 use local_classprogress\local\dates;
+use local_classprogress\local\plain_text;
 use local_classprogress\local\session_item;
 use mod_classprogress\local\access;
 use mod_classprogress\local\plan_log;
@@ -58,6 +59,33 @@ final class log_view implements \renderable, \templatable {
             return '';
         }
         return $days === 1 ? get_string('lateone', 'mod_classprogress') : get_string('late', 'mod_classprogress', $days);
+    }
+
+    /**
+     * Names a session: its title or, when the title is empty, the first line of its plan (REQ-UIX-003).
+     *
+     * @param \stdClass $item The plan item row.
+     * @return string The name, as typed, for the caller to escape; empty when the session has neither.
+     */
+    public static function session_title(\stdClass $item): string {
+        return $item->title !== '' ? $item->title : self::first_line($item->content, 60);
+    }
+
+    /**
+     * Gives the first line of a Markdown text as plain text, without its bullet, cut to a length.
+     *
+     * @param string $markdown The text, as typed.
+     * @param int $length Most characters, the ellipsis included.
+     * @return string The line, as typed, for the caller to escape; empty for a blank text.
+     */
+    public static function first_line(string $markdown, int $length): string {
+        foreach (explode("\n", plain_text::from_markdown($markdown)) as $line) {
+            $line = trim(preg_replace(['/^\s*•\s*/u', '/\s+/u'], ['', ' '], $line));
+            if ($line !== '') {
+                return \core_text::strlen($line) > $length ? rtrim(\core_text::substr($line, 0, $length - 1)) . '…' : $line;
+            }
+        }
+        return '';
     }
 
     /**

@@ -30,11 +30,16 @@ require_once($CFG->libdir . '/formslib.php');
  * The entry of a session: status, what was done, and for a deviation its reason, note, measure and carry-over; for an
  * unplanned session, its date (a date selector, date_field) instead of a status.
  *
+ * The status is three radio buttons, done chosen for a new entry. A session after today can only be cancelled in
+ * advance (REQ-LOG-009), so its form shows the status as fixed text and asks only for the reason, note and measure.
+ * When pending sessions are left after this one, a second button, savenext, saves and goes on to the next of them.
+ *
  * Text is taken as typed. validation() reports the issues of entry_service::check() on their fields, so the rules
  * live in one place. The form carries the entry's timemodified, so that the page can refuse a save made from an older
  * version.
  *
- * Custom data: userid, the acting user; planid; itemid, the plan item, or null for an unplanned session.
+ * Custom data: userid, the acting user; planid; itemid, the plan item, or null for an unplanned session; future,
+ * whether the plan item is after today; nextpending, how many pending sessions are left after this one.
  *
  * @package    mod_classprogress
  * @copyright  2026 Jordi Vidal
@@ -43,8 +48,8 @@ require_once($CFG->libdir . '/formslib.php');
 class entry_form extends \moodleform {
     /** @var string[] Issue code => field it is shown on. */
     private const ISSUE_FIELDS = [
-        entry_rules::BAD_STATUS => 'status',
-        entry_rules::FUTURE_NOT_DONE_ONLY => 'status',
+        entry_rules::BAD_STATUS => 'statusgroup',
+        entry_rules::FUTURE_NOT_DONE_ONLY => 'statusgroup',
         entry_rules::CONTENT_REQUIRED => 'content',
         entry_rules::REASON_REQUIRED => 'reason',
         entry_rules::BAD_REASON => 'reason',
@@ -61,7 +66,8 @@ class entry_form extends \moodleform {
     protected function definition(): void {
         $mform = $this->_form;
         $planned = $this->_customdata['itemid'] !== null;
-        $textarea = ['rows' => 6, 'cols' => 60];
+        $future = $planned && !empty($this->_customdata['future']);
+        $nextpending = (int) ($this->_customdata['nextpending'] ?? 0);
 
         // The id is the activity's course module, as on every page of the activity.
         foreach (['id', 'entryid', 'itemid', 'timemodified'] as $hidden) {
@@ -69,19 +75,30 @@ class entry_form extends \moodleform {
             $mform->setType($hidden, PARAM_INT);
         }
 
-        if ($planned) {
-            $statuses = [];
-            foreach ([entry_rules::DONE, entry_rules::PARTIAL, entry_rules::NOT_DONE] as $status) {
-                $statuses[$status] = get_string('entrystatus_' . $status, 'mod_classprogress');
-            }
-            $mform->addElement('select', 'status', get_string('status', 'mod_classprogress'), $statuses);
+        if ($future) {
+            $mform->addElement('hidden', 'status', entry_rules::NOT_DONE);
             $mform->setType('status', PARAM_ALPHAEXT);
+            $mform->setConstant('status', entry_rules::NOT_DONE);
+            $fixed = get_string('entrystatusfixed', 'mod_classprogress');
+            $mform->addElement('static', 'statusgroup', get_string('status', 'mod_classprogress'), $fixed);
+        } else if ($planned) {
+            $radios = [];
+            foreach ([entry_rules::DONE, entry_rules::PARTIAL, entry_rules::NOT_DONE] as $status) {
+                $label = get_string('entrystatus_' . $status, 'mod_classprogress');
+                $radios[] = $mform->createElement('radio', 'status', '', $label, $status);
+            }
+            $mform->addGroup($radios, 'statusgroup', get_string('status', 'mod_classprogress'), ' ', false);
+            $mform->setType('status', PARAM_ALPHAEXT);
+            $mform->setDefault('status', entry_rules::DONE);
         } else {
             $mform->addElement('date_selector', 'date', get_string('sessiondate', 'mod_classprogress'), date_field::options());
         }
 
-        $mform->addElement('textarea', 'content', get_string('entrycontent', 'mod_classprogress'), $textarea);
-        $mform->setType('content', PARAM_RAW);
+        if (!$future) {
+            $label = get_string('entrycontent', 'mod_classprogress');
+            $mform->addElement('textarea', 'content', $label, ['rows' => 4, 'cols' => 60]);
+            $mform->setType('content', PARAM_RAW);
+        }
 
         if ($planned) {
             $reasons = ['' => get_string('choosedots')];
@@ -90,19 +107,29 @@ class entry_form extends \moodleform {
             }
             $mform->addElement('select', 'reason', get_string('entryreason', 'mod_classprogress'), $reasons);
             $mform->setType('reason', PARAM_ALPHAEXT);
-            $mform->addElement('textarea', 'reasonnote', get_string('entryreasonnote', 'mod_classprogress'), $textarea);
+            $small = ['rows' => 2, 'cols' => 60];
+            $mform->addElement('textarea', 'reasonnote', get_string('entryreasonnote', 'mod_classprogress'), $small);
             $mform->setType('reasonnote', PARAM_RAW);
-            $mform->addElement('textarea', 'measure', get_string('entrymeasure', 'mod_classprogress'), $textarea);
+            $mform->addElement('textarea', 'measure', get_string('entrymeasure', 'mod_classprogress'), $small);
             $mform->setType('measure', PARAM_RAW);
-            $mform->addElement('advcheckbox', 'carry', '', get_string('entrycarry', 'mod_classprogress'));
-            $mform->setType('carry', PARAM_BOOL);
-            foreach (['reason', 'reasonnote', 'measure'] as $field) {
-                $mform->hideIf($field, 'status', 'eq', entry_rules::DONE);
+            if (!$future) {
+                $mform->addElement('advcheckbox', 'carry', '', get_string('entrycarry', 'mod_classprogress'));
+                $mform->setType('carry', PARAM_BOOL);
+                foreach (['reason', 'reasonnote', 'measure'] as $field) {
+                    $mform->hideIf($field, 'status', 'eq', entry_rules::DONE);
+                }
+                $mform->hideIf('carry', 'status', 'neq', entry_rules::PARTIAL);
             }
-            $mform->hideIf('carry', 'status', 'neq', entry_rules::PARTIAL);
         }
 
-        $this->add_action_buttons(true, get_string('saveentry', 'mod_classprogress'));
+        $buttons = [$mform->createElement('submit', 'submitbutton', get_string('saveentry', 'mod_classprogress'))];
+        if ($nextpending > 0) {
+            $label = get_string('saveandnext', 'mod_classprogress', $nextpending);
+            $buttons[] = $mform->createElement('submit', 'savenext', $label);
+        }
+        $buttons[] = $mform->createElement('cancel');
+        $mform->addGroup($buttons, 'buttonar', '', ' ', false);
+        $mform->closeHeaderBefore('buttonar');
     }
 
     /**

@@ -70,6 +70,32 @@ final class log_view_test extends \advanced_testcase {
     }
 
     /**
+     * A session is named by its title or, when the title is empty, by the first line of its plan as plain text, cut to
+     * about 60 characters; what was done is cut the same way, to about 80.
+     *
+     * @group REQ-UIX-003
+     * @group REQ-UIX-007
+     */
+    public function test_a_session_without_a_title_is_named_by_its_plan(): void {
+        $item = fn(string $title, string $content): \stdClass => (object) ['title' => $title, 'content' => $content];
+        $long = "\n- **Repàs** del tema 1 abans de l'examen: consultes amb JOIN, subconsultes i agregats\n- Segona línia";
+
+        $this->assertSame('Entorn', log_view::session_title($item('Entorn', 'Instal·lació')));
+        $this->assertSame('Hola, món', log_view::session_title($item('', 'Hola, món')));
+        $this->assertSame('', log_view::session_title($item('', '')));
+        $title = log_view::session_title($item('', $long));
+        $this->assertStringStartsWith("Repàs del tema 1 abans de l'examen", $title);
+        $this->assertStringEndsWith('…', $title);
+        $this->assertLessThanOrEqual(60, \core_text::strlen($title));
+        $this->assertStringNotContainsString('agregats', $title);
+
+        $done = log_view::first_line(str_repeat('Normes explicades a tota la classe. ', 4) . "\nI més coses", 80);
+        $this->assertStringStartsWith('Normes explicades a tota la classe.', $done);
+        $this->assertLessThanOrEqual(80, \core_text::strlen($done));
+        $this->assertSame('Prova 1 < 2 & co', log_view::first_line("Prova  1 < 2 & co\nI més", 80));
+    }
+
+    /**
      * A date with two planned days (REQ-PLN-010) shows both sessions on the log, in plan order, each with its own link,
      * and each is logged with its own entry; after both, nothing is pending (R3-2).
      *

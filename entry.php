@@ -18,8 +18,9 @@
  * Log a session of an approved plan, edit or delete its entry, or add an unplanned session.
  *
  * Opened with the activity's id and itemid (a plan item: its entry, if it has one, is edited), entryid (an entry) or
- * neither (a new unplanned session). The planned day is shown read-only above the form, with what the previous partial
- * session left over.
+ * neither (a new unplanned session). The heading names the session; its plan is shown read-only above the form, with
+ * what the previous partial session left over, and a saved entry's written-on day, history and delete links follow the
+ * form. When pending sessions are left, the form can save and go on to the oldest of them.
  *
  * @package    mod_classprogress
  * @copyright  2026 Jordi Vidal
@@ -28,11 +29,14 @@
 
 use core\output\notification;
 use local_classprogress\form\date_field;
+use local_classprogress\local\dates;
+use local_classprogress\local\session_item;
 use mod_classprogress\form\entry_form;
 use mod_classprogress\local\access;
 use mod_classprogress\local\entry_service;
 use mod_classprogress\local\plan_service;
 use mod_classprogress\output\entry_context;
+use mod_classprogress\output\log_view;
 
 require_once(__DIR__ . '/../../config.php');
 
@@ -69,7 +73,8 @@ if ($entry) {
     $url = new \core\url('/mod/classprogress/entry.php', $item ? ['id' => $cm->id, 'itemid' => $item->id] : ['id' => $cm->id]);
 }
 if ($item) {
-    $title = s($item->sessiondate . ($item->title === '' ? '' : ' · ' . $item->title));
+    $name = log_view::session_title($item);
+    $title = s($item->sessiondate . ($name === '' ? '' : ' · ' . $name));
 } else {
     $title = get_string('unplannedsession', 'mod_classprogress') . ($entry ? ' · ' . s($entry->sessiondate) : '');
 }
@@ -102,11 +107,22 @@ if ($action === 'delete') {
     exit;
 }
 
-$form = new entry_form($url, ['userid' => (int) $USER->id, 'planid' => $planid, 'itemid' => $item ? (int) $item->id : null]);
+// The pending sessions, oldest first, as their item ids.
+$pending = function () use ($USER, $planid): array {
+    $sessions = entry_service::log((int) $USER->id, $planid)->groups->pending;
+    return array_map(fn(session_item $session): int => $session->id, $sessions);
+};
+$future = $item && dates::day_number($item->sessiondate) > dates::day_number(entry_service::today((int) $USER->id));
+$form = new entry_form($url, ['userid' => (int) $USER->id, 'planid' => $planid, 'itemid' => $item ? (int) $item->id : null,
+    'future' => $future, 'nextpending' => count(array_diff($pending(), $item ? [(int) $item->id] : []))]);
 $stale = false;
 if ($form->is_cancelled()) {
     redirect($logurl);
 } else if ($data = $form->get_data()) {
+    if ($future && $entry) {
+        // The form of a cancellation in advance does not ask what was done; a text written before is kept.
+        $data->content = $entry->content;
+    }
     $typed = entry_form::to_data($data, $item !== null);
     try {
         if ($entry) {
@@ -122,7 +138,9 @@ if ($form->is_cancelled()) {
         $stale = true;
     }
     if (!$stale) {
-        redirect($logurl, get_string('entrysaved', 'mod_classprogress'), null, notification::NOTIFY_SUCCESS);
+        $next = empty($data->savenext) ? null : ($pending()[0] ?? null);
+        $nexturl = $next === null ? $logurl : new \core\url('/mod/classprogress/entry.php', ['id' => $cm->id, 'itemid' => $next]);
+        redirect($nexturl, get_string('entrysaved', 'mod_classprogress'), null, notification::NOTIFY_SUCCESS);
     }
 }
 if (!$stale) {
@@ -141,6 +159,8 @@ if ($stale) {
     echo $OUTPUT->notification(get_string('error_changedelsewhere', 'mod_classprogress'), notification::NOTIFY_ERROR);
 }
 $leftover = $item ? entry_service::left_over((int) $USER->id, (int) $item->id) : null;
-echo $OUTPUT->render(new entry_context($plan, $item, $entry, $leftover));
+$context = (new entry_context($plan, $item, $entry, $leftover))->export_for_template($OUTPUT);
+echo $OUTPUT->render_from_template('mod_classprogress/entry_context', $context);
 $form->display();
+echo $OUTPUT->render_from_template('mod_classprogress/entry_written', $context);
 echo $OUTPUT->footer();

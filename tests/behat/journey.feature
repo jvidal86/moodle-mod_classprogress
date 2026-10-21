@@ -75,15 +75,15 @@ Feature: From start to finish
     And I should see "Late by" in the "2026-09-14" "table_row"
     When I click on "Log" "link" in the "2026-09-18" "table_row"
     And I set the following fields to these values:
-      | Status        | Partly done                         |
+      | Partly done   | 1                                   |
       | What was done | Només la primera part dels elements |
       | Reason        | Incident                            |
     And I press "Save entry"
     Then I should see "Partly done" in the "2026-09-18" "table_row"
     When I click on "Log" "link" in the "2026-09-21" "table_row"
     And I set the following fields to these values:
-      | Status | Not done |
-      | Reason | Strike   |
+      | Not done | 1      |
+      | Reason   | Strike |
     And I press "Save entry"
     Then I should see "Not done" in the "2026-09-21" "table_row"
     When I click on "Add an unplanned session" "link"

@@ -43,7 +43,7 @@ Feature: Log what was done in each session
     And I should not see "Late by" in the "Entorn" "table_row"
     When I click on "Log" "link" in the "Presentació" "table_row"
     And I set the following fields to these values:
-      | Status                       | Partly done        |
+      | Partly done                  | 1                  |
       | What was done                | Només les normes   |
       | Reason                       | Incident           |
       | Continue in the next session | 1                  |
@@ -75,7 +75,7 @@ Feature: Log what was done in each session
     And I should see "Normes explicades"
     And "Edited" "text" should appear before "Created" "text"
     And "Normes i prova diagnòstica" "text" should appear before "Normes explicades" "text"
-    When I press "Continue"
+    When I press "Back to the session log"
     And I click on "Edit entry" "link" in the "Presentació" "table_row"
     And I click on "Delete entry" "link"
     And I should see "Delete the entry for the session of"
