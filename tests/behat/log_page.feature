@@ -152,9 +152,7 @@ Feature: The log page leads with the session to log
     Then I should see "Futura 6" in the "[data-region='log-upcoming-more']" "css_element"
     And the page should meet accessibility standards
 
-  # At 390 px the page must not scroll sideways in English or in Catalan (REQ-UIX-004). The Catalan run is not
-  # automated: neither the development sites nor CI have the Catalan language pack, so it is a manual check of review
-  # round R6 on the lab.
+  # At 390 px the page must not scroll sideways in English or in Catalan (REQ-UIX-004); the Catalan run follows.
   @javascript @accessibility @REQ-UIX-004
   Scenario: At phone width the log page and the entry form fit the screen, with the block under the title and the late badge under the date
     Given the following "mod_classprogress > plan items" exist:
@@ -177,4 +175,35 @@ Feature: The log page leads with the session to log
     And the page should meet accessibility standards
     When I click on "Log" "link" in the "De l'E/R al relacional" "table_row"
     Then the page should not scroll sideways
+    And the page should meet accessibility standards
+
+  # The activity's own strings, the long ones, in Catalan: neither the development sites nor CI have the Catalan
+  # language pack, so a minimal one makes Moodle read the activity's lang/ca while Moodle's own strings stay in English.
+  # A check with the real Catalan language pack remains a manual item of review round R6 on the lab.
+  @javascript @accessibility @REQ-UIX-004
+  Scenario: In Catalan, at phone width the log page and the entry form fit the screen
+    Given the following "mod_classprogress > plan items" exist:
+      | plan           | sessiondate             | block                                                              | title                                         | content          | hours |
+      | Bases de dades | ##-40 days##%Y-%m-%d##  | Bloc A · Els elements de les bases de dades i el seu disseny (RA1) | Presentació del mòdul i de les normes d'aula  | Normes de l'aula | 2     |
+      | Bases de dades | ##-38 days##%Y-%m-%d##  | Bloc A · Els elements de les bases de dades i el seu disseny (RA1) | Entorn de treball i instal·lació del servidor | Instal·lació     | 2     |
+      | Bases de dades | ##-3 days##%Y-%m-%d##   | Bloc B · Ronda 1 · La botiga bàsica (RA2–RA4)                      | Model E/R                                     | Entitats         | 2     |
+      | Bases de dades | ##-2 days##%Y-%m-%d##   | Bloc B · Ronda 1 · La botiga bàsica (RA2–RA4)                      | De l'E/R al relacional                        | Pas a taules     | 2     |
+      | Bases de dades | ##today##%Y-%m-%d##     | Bloc B · Ronda 1 · La botiga bàsica (RA2–RA4)                      | Posem en marxa el servidor de bases de dades  | MariaDB          | 2     |
+      | Bases de dades | ##+3 days##%Y-%m-%d##   | Bloc B · Ronda 1 · La botiga bàsica (RA2–RA4)                      | BotigaDB al servidor, i el seu plànol         | Diagrama         | 2     |
+    And the following "mod_classprogress > entries" exist:
+      | planitem                                      | content                    | writtenon           | status  | reason   | user     |
+      | Presentació del mòdul i de les normes d'aula  | Normes explicades a classe | ##today##%Y-%m-%d## | partial | incident | teacher1 |
+      | Entorn de treball i instal·lació del servidor | IDE instal·lat a tothom    | ##today##%Y-%m-%d## | done    |          | teacher1 |
+    And "teacher1" uses the activity in Catalan
+    And I use a phone screen "390" px wide
+    And I am on the "Bases de dades" "classprogress activity" page logged in as "teacher1"
+    Then I should see "Registre de sessions"
+    And I should see "Sessions pendents (3)" in the "[data-region='log-pending']" "css_element"
+    And I should see "Amb 40 dies de retard" in the "Presentació del mòdul i de les normes d'aula" "table_row"
+    And I should see "Edita el registre" in the "Presentació del mòdul i de les normes d'aula" "table_row"
+    And the page should not scroll sideways
+    And the page should meet accessibility standards
+    When I click on "Registra" "link" in the "Model E/R" "table_row"
+    Then "Desa i registra la sessió pendent següent (en queden 2)" "button" should exist
+    And the page should not scroll sideways
     And the page should meet accessibility standards

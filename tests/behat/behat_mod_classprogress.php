@@ -46,6 +46,9 @@ class behat_mod_classprogress extends behat_base {
     /** @var bool Whether the scenario gave the browser a phone screen. */
     private bool $phonescreen = false;
 
+    /** @var string[] Files and folders of the Catalan language pack the scenario wrote, in the order written. */
+    private array $catalan = [];
+
     /**
      * Returns the URL of a page of one plan activity.
      *
@@ -219,6 +222,52 @@ class behat_mod_classprogress extends behat_base {
     private function devtools(string $command, array $parameters = []): void {
         $webdriver = $this->getSession()->getDriver()->getWebDriver();
         (new \Facebook\WebDriver\Chrome\ChromeDevToolsDriver($webdriver))->execute($command, $parameters);
+    }
+
+    /**
+     * Shows the activity to a user in Catalan: their language becomes Catalan, and a minimal Catalan language pack, its
+     * langconfig.php alone, lets Moodle read the activity's own lang/ca. Moodle's own strings stay in English, since the
+     * sites that run the tests have no Catalan language pack. A pack the site already has is left as it is; the one
+     * written here goes after the scenario (remove_catalan()).
+     *
+     * @Given :username uses the activity in Catalan
+     *
+     * @param string $username The user.
+     */
+    public function uses_the_activity_in_catalan(string $username): void {
+        global $CFG, $DB;
+
+        $dir = $CFG->dataroot . '/lang/ca';
+        if (!file_exists($dir . '/langconfig.php')) {
+            // The folders this creates, outermost first, so that they go in the reverse order.
+            foreach ([dirname($dir), $dir] as $folder) {
+                if (!is_dir($folder)) {
+                    check_dir_exists($folder);
+                    $this->catalan[] = $folder;
+                }
+            }
+            $config = "<?php\n\$string['thislanguage'] = 'Català';\n\$string['parentlanguage'] = '';\n";
+            file_put_contents($dir . '/langconfig.php', $config);
+            $this->catalan[] = $dir . '/langconfig.php';
+            get_string_manager()->reset_caches();
+        }
+        $DB->set_field('user', 'lang', 'ca', ['username' => $username]);
+    }
+
+    /**
+     * Removes the minimal Catalan language pack that a scenario wrote, so that no later scenario sees it.
+     *
+     * @AfterScenario
+     */
+    public function remove_catalan(): void {
+        if (!$this->catalan) {
+            return;
+        }
+        foreach (array_reverse($this->catalan) as $path) {
+            is_dir($path) ? rmdir($path) : unlink($path);
+        }
+        $this->catalan = [];
+        get_string_manager()->reset_caches();
     }
 
     /**
