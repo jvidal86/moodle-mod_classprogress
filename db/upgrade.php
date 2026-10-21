@@ -32,5 +32,11 @@
  * @return bool True when every step succeeded.
  */
 function xmldb_classprogress_upgrade(int $oldversion): bool {
+    if ($oldversion < 2026102100) {
+        // Release 0.10.0 (the log page and the entry form) changes no table; the savepoint keeps the upgrade ending at
+        // the current version.
+        upgrade_mod_savepoint(true, 2026102100, 'classprogress');
+    }
+
     return true;
 }

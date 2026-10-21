@@ -42,8 +42,8 @@ final class release_version_test extends \advanced_testcase {
     }
 
     /**
-     * The activity is released as 0.9.0 beta, for Moodle 4.5.0 and later, supported on 4.5 to 5.3, with a version
-     * above every earlier one.
+     * The activity is released as 0.10.0 beta (the log page and the entry form of M6), for Moodle 4.5.0 and later,
+     * supported on 4.5 to 5.3, with a version above every earlier one.
      *
      * @group REQ-REL-001
      */
@@ -51,7 +51,7 @@ final class release_version_test extends \advanced_testcase {
         $plugin = self::version_file('mod_classprogress');
 
         $this->assertSame('mod_classprogress', $plugin->component);
-        $this->assertSame('0.9.0', $plugin->release);
+        $this->assertSame('0.10.0', $plugin->release);
         $this->assertSame(MATURITY_BETA, $plugin->maturity);
         $this->assertSame(2024100700, $plugin->requires);
         $this->assertSame([405, 503], $plugin->supported);
@@ -59,7 +59,8 @@ final class release_version_test extends \advanced_testcase {
     }
 
     /**
-     * The activity depends on the local plugin's release: exactly the version in its version.php.
+     * The activity depends on the local plugin's release: exactly the version in its version.php. Its own release may
+     * run ahead of the local plugin's, as 0.10.0 changes only the activity.
      *
      * @group REQ-REL-001
      */
@@ -68,7 +69,6 @@ final class release_version_test extends \advanced_testcase {
         $local = self::version_file('local_classprogress');
 
         $this->assertSame(['local_classprogress' => $local->version], $plugin->dependencies);
-        $this->assertSame($plugin->release, $local->release);
     }
 
     /**

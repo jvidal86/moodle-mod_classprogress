@@ -1,5 +1,22 @@
 # Changes
 
+## 0.10.0 (unreleased)
+
+The log page and the entry form, reworked from the teacher's feedback on 0.9.0. Nothing stored or exported
+changes, and the activity still needs `local_classprogress` 0.9.0.
+
+- The log page starts with the session to log: today's, or else the next one, with its plan and a button to log it
+  (or to log a cancellation, for a later session).
+- Pending sessions come next, then the next five upcoming sessions and the latest five logged ones, newest first; the
+  rest of each list is folded. The history of deleted entries is linked at the end.
+- Every session row opens to show its block, hours and planned content; a session without a title shows the start of
+  its plan instead, and a logged one the start of what was done.
+- On a phone the log page no longer scrolls sideways: the block and written-on columns fold into the row.
+- The entry form: the status is chosen with three radio buttons, and is fixed to "not done" for a session after
+  today; the reason is labelled as required; a second button saves and opens the next pending session; the plan is
+  shown once, and the written-on date, history and delete links follow the buttons.
+- The history of an entry names its session and ends with a button back to the session log.
+
 ## 0.9.0 (2026-10-21)
 
 First release, beta, for Moodle 4.5 to 5.3. Needs `local_classprogress` 0.9.0.
