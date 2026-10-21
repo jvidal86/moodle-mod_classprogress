@@ -162,7 +162,9 @@ class behat_mod_classprogress extends behat_base {
         $counts = [];
 
         $this->visit_page($this->resolve_page_instance_url('View', $identifier));
-        $counts['log page'] = (string) count($session->getPage()->findAll('css', "[data-region='log-pending'] tbody tr"));
+        // The list's own rows only: a plan whose text holds a Markdown table puts a table inside its row.
+        $rows = "[data-region='log-pending'] > .table-responsive > table > tbody > tr";
+        $counts['log page'] = (string) count($session->getPage()->findAll('css', $rows));
 
         $this->visit_page(new moodle_url('/local/classprogress/index.php'));
         $counts['overview'] = $this->cell_text(

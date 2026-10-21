@@ -68,6 +68,23 @@ Feature: Log a session with few clicks
     Then I should see "Entry saved."
     And I should see "Not done" in the "Primer programa" "table_row"
 
+  @REQ-UIX-005 @REQ-LOG-009
+  Scenario: Editing a cancellation logged in advance keeps what was done, which its form does not ask for
+    Given the following "mod_classprogress > entries" exist:
+      | planitem        | status   | reason | content                       | user     |
+      | Primer programa | not_done | trip   | Avisats per correu el dilluns | teacher1 |
+    And I am on the "Bases de dades" "classprogress activity" page logged in as "teacher1"
+    When I click on "Edit entry" "link" in the "Primer programa" "table_row"
+    Then I should see "Not done (cancellation known in advance)"
+    And "What was done" "field" should not exist
+    When I set the field "Note about the reason" to "Sortida ajornada"
+    And I press "Save entry"
+    Then I should see "Entry saved."
+    And I should see "Avisats per correu el dilluns" in the "Primer programa" "table_row"
+    When I click on "History" "link" in the "Primer programa" "table_row"
+    Then I should see "Edited"
+    And I should see "Sortida ajornada"
+
   @REQ-UIX-006
   Scenario: Save and log the next pending session goes from one pending session to the next, oldest first
     Given I am on the "Bases de dades" "classprogress activity" page logged in as "teacher1"
