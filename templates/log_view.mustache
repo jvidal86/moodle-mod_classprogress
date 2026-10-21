@@ -17,121 +17,107 @@
 {{!
     @template mod_classprogress/log_view
 
-    The log of an approved plan: pending sessions, logged sessions with their status and late flag, upcoming sessions.
+    The log of an approved plan: the session to log first, the actions, the pending sessions, the upcoming ones, the
+    logged ones and the link to the deleted entries. The upcoming and logged lists show their first rows and fold the
+    rest in a <details>, which needs no JavaScript.
 
     Context variables required for this template:
-    * haspending, pending - Sessions up to today without an entry, oldest first, each with date, block and title (as
-      typed, escaped here) and logurl.
-    * haslogged, logged - Sessions with an entry, by day, each with date, block, title (as typed, escaped here),
-      status, writtenon, late (empty when not late), editurl and historyurl.
-    * hasupcoming, upcoming - Sessions after today without an entry, each as in pending.
+    * card - The session to log (null when no session is left from today on): istoday, and the fields of a row of
+      mod_classprogress/log_items.
+    * addurl - Link to add an unplanned session; empty when the user may not.
+    * planurl, exporturl, deletedurl - Links to the plan, the export and the history of deleted entries.
+    * pending - Sessions up to today without an entry, oldest first: count, rows (see mod_classprogress/log_items) and
+      primary.
+    * upcoming - Sessions after today without an entry, soonest first: count, rows shown, more (null, or the folded rows
+      as rows) and primary.
+    * logged - Sessions with an entry, newest first: count, rows shown (see mod_classprogress/log_entries) and more.
 
     Example context (json):
     {
-        "haspending": true,
-        "pending": [{"date": "2026-10-16", "block": "RA1", "title": "Entorn",
-            "logurl": "https://example.com/local/classprogress/entry.php?itemid=2"}],
-        "haslogged": true,
-        "logged": [{"date": "2026-10-12", "block": "RA1", "title": "Presentació", "status": "Done",
-            "writtenon": "2026-10-15", "late": "Late by 3 days",
-            "editurl": "https://example.com/local/classprogress/entry.php?id=1",
-            "historyurl": "https://example.com/local/classprogress/history.php?id=1"}],
-        "hasupcoming": false,
-        "upcoming": []
+        "card": {"istoday": true, "date": "2026-10-16", "hasplan": true, "title": "Entorn", "block": "RA1", "hours": "2",
+            "content": "<ul><li>Instal·lació de l'IDE</li></ul>",
+            "logurl": "https://example.com/mod/classprogress/entry.php?id=1&itemid=2"},
+        "addurl": "https://example.com/mod/classprogress/entry.php?id=1",
+        "planurl": "https://example.com/mod/classprogress/plan.php?id=1",
+        "exporturl": "https://example.com/mod/classprogress/export.php?id=1",
+        "deletedurl": "https://example.com/mod/classprogress/history.php?id=1",
+        "pending": {"count": 1, "primary": true, "rows": [{"date": "2026-10-16", "hasplan": true, "title": "Entorn",
+            "block": "RA1", "hours": "2", "content": "<ul><li>Instal·lació de l'IDE</li></ul>",
+            "logurl": "https://example.com/mod/classprogress/entry.php?id=1&itemid=2"}]},
+        "upcoming": {"count": 0, "rows": [], "more": null},
+        "logged": {"count": 1, "more": null, "rows": [{"date": "2026-10-12", "hasplan": true, "title": "Presentació",
+            "block": "RA1", "hours": "2", "content": "<p>Normes de l'aula</p>", "done": "Normes explicades",
+            "status": "Done", "writtenon": "2026-10-15", "late": "Late by 3 days",
+            "editurl": "https://example.com/mod/classprogress/entry.php?id=1&entryid=1",
+            "historyurl": "https://example.com/mod/classprogress/history.php?id=1&entryid=1"}]}
     }
 }}
 <div class="mod_classprogress-log">
-    <section class="mt-4" data-region="log-pending">
-        <h3>{{#str}} pending, mod_classprogress {{/str}}</h3>
-        {{#haspending}}
-            <p class="text-muted">{{#str}} pendingintro, mod_classprogress {{/str}}</p>
-            <table class="generaltable">
-                <thead>
-                    <tr>
-                        <th scope="col">{{#str}} date, mod_classprogress {{/str}}</th>
-                        <th scope="col">{{#str}} block, mod_classprogress {{/str}}</th>
-                        <th scope="col">{{#str}} daytitle, mod_classprogress {{/str}}</th>
-                        <th scope="col"><span class="accesshide">{{#str}} actions {{/str}}</span></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {{#pending}}
-                        <tr>
-                            <td class="text-nowrap">{{date}}</td>
-                            <td>{{block}}</td>
-                            <td>{{title}}</td>
-                            <td><a class="btn btn-primary btn-sm" href="{{logurl}}">{{#str}} logsession, mod_classprogress {{/str}}</a></td>
-                        </tr>
-                    {{/pending}}
-                </tbody>
-            </table>
-        {{/haspending}}
-        {{^haspending}}
-            <p>{{#str}} nopending, mod_classprogress {{/str}}</p>
-        {{/haspending}}
-    </section>
-    <section class="mt-4" data-region="log-logged">
-        <h3>{{#str}} logged, mod_classprogress {{/str}}</h3>
-        {{#haslogged}}
-            <table class="generaltable">
-                <thead>
-                    <tr>
-                        <th scope="col">{{#str}} date, mod_classprogress {{/str}}</th>
-                        <th scope="col">{{#str}} block, mod_classprogress {{/str}}</th>
-                        <th scope="col">{{#str}} daytitle, mod_classprogress {{/str}}</th>
-                        <th scope="col">{{#str}} status, mod_classprogress {{/str}}</th>
-                        <th scope="col">{{#str}} writtenon, mod_classprogress {{/str}}</th>
-                        <th scope="col"><span class="accesshide">{{#str}} actions {{/str}}</span></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {{#logged}}
-                        <tr>
-                            <td class="text-nowrap">{{date}}</td>
-                            <td>{{block}}</td>
-                            <td>{{title}}</td>
-                            <td>{{status}}</td>
-                            <td class="text-nowrap">{{writtenon}}{{#late}} <span class="badge bg-warning text-dark">{{late}}</span>{{/late}}</td>
-                            <td class="text-nowrap">
-                                <a href="{{editurl}}">{{#str}} editentry, mod_classprogress {{/str}}</a> ·
-                                <a href="{{historyurl}}">{{#str}} history, mod_classprogress {{/str}}</a>
-                            </td>
-                        </tr>
-                    {{/logged}}
-                </tbody>
-            </table>
-        {{/haslogged}}
-        {{^haslogged}}
-            <p>{{#str}} nologged, mod_classprogress {{/str}}</p>
-        {{/haslogged}}
-    </section>
-    <section class="mt-4" data-region="log-upcoming">
-        <h3>{{#str}} upcoming, mod_classprogress {{/str}}</h3>
-        {{#hasupcoming}}
-            <p class="text-muted">{{#str}} upcomingintro, mod_classprogress {{/str}}</p>
-            <table class="generaltable">
-                <thead>
-                    <tr>
-                        <th scope="col">{{#str}} date, mod_classprogress {{/str}}</th>
-                        <th scope="col">{{#str}} block, mod_classprogress {{/str}}</th>
-                        <th scope="col">{{#str}} daytitle, mod_classprogress {{/str}}</th>
-                        <th scope="col"><span class="accesshide">{{#str}} actions {{/str}}</span></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {{#upcoming}}
-                        <tr>
-                            <td class="text-nowrap">{{date}}</td>
-                            <td>{{block}}</td>
-                            <td>{{title}}</td>
-                            <td><a class="btn btn-secondary btn-sm" href="{{logurl}}">{{#str}} logsession, mod_classprogress {{/str}}</a></td>
-                        </tr>
-                    {{/upcoming}}
-                </tbody>
-            </table>
-        {{/hasupcoming}}
-        {{^hasupcoming}}
-            <p>{{#str}} noupcoming, mod_classprogress {{/str}}</p>
-        {{/hasupcoming}}
-    </section>
+    {{#card}}
+        <section class="card mb-3" data-region="log-card">
+            <div class="card-body">
+                <h4 class="card-title">{{#istoday}}{{#str}} cardtoday, mod_classprogress {{/str}}{{/istoday}}{{^istoday}}{{#str}} cardnext, mod_classprogress {{/str}}{{/istoday}}</h4>
+                <p class="mb-1"><strong>{{date}} · {{title}}</strong></p>
+                <p class="text-muted">{{#hours}}{{hours}} h{{#block}} · {{/block}}{{/hours}}{{block}}</p>
+                {{{content}}}
+                <a class="btn btn-primary" href="{{logurl}}">{{#istoday}}{{#str}} logthissession, mod_classprogress {{/str}}{{/istoday}}{{^istoday}}{{#str}} logcancellation, mod_classprogress {{/str}}{{/istoday}}</a>
+            </div>
+        </section>
+    {{/card}}
+    <p data-region="log-actions">
+        {{#addurl}}<a class="btn btn-secondary" href="{{addurl}}">{{#str}} addunplanned, mod_classprogress {{/str}}</a>{{/addurl}}
+        <a class="btn btn-link" href="{{planurl}}">{{#str}} plandays, mod_classprogress {{/str}}</a>
+        <a class="btn btn-link" href="{{exporturl}}">{{#str}} export, mod_classprogress {{/str}}</a>
+    </p>
+    <p>{{#str}} logintro, mod_classprogress {{/str}}</p>
+    {{#pending}}
+        <section class="mt-4" data-region="log-pending">
+            <h3>{{#str}} pending, mod_classprogress, {{count}} {{/str}}</h3>
+            {{#count}}
+                <p class="text-muted">{{#str}} pendingintro, mod_classprogress {{/str}}</p>
+                {{> mod_classprogress/log_items }}
+            {{/count}}
+            {{^count}}
+                <p>{{#str}} nopending, mod_classprogress {{/str}}</p>
+            {{/count}}
+        </section>
+    {{/pending}}
+    {{#upcoming}}
+        <section class="mt-4" data-region="log-upcoming">
+            <h3>{{#str}} upcoming, mod_classprogress, {{count}} {{/str}}</h3>
+            {{#count}}
+                <p class="text-muted">{{#str}} upcomingintro, mod_classprogress {{/str}}</p>
+                {{> mod_classprogress/log_items }}
+                {{#more}}
+                    <details class="mb-3" data-region="log-upcoming-more">
+                        <summary>{{#str}} allupcoming, mod_classprogress, {{count}} {{/str}}</summary>
+                        {{> mod_classprogress/log_items }}
+                    </details>
+                {{/more}}
+            {{/count}}
+            {{^count}}
+                <p>{{#str}} noupcoming, mod_classprogress {{/str}}</p>
+            {{/count}}
+        </section>
+    {{/upcoming}}
+    {{#logged}}
+        <section class="mt-4" data-region="log-logged">
+            <h3>{{#str}} logged, mod_classprogress, {{count}} {{/str}}</h3>
+            {{#count}}
+                {{> mod_classprogress/log_entries }}
+                {{#more}}
+                    <details class="mb-3" data-region="log-logged-more">
+                        <summary>{{#str}} alllogged, mod_classprogress, {{count}} {{/str}}</summary>
+                        {{> mod_classprogress/log_entries }}
+                    </details>
+                {{/more}}
+            {{/count}}
+            {{^count}}
+                <p>{{#str}} nologged, mod_classprogress {{/str}}</p>
+            {{/count}}
+        </section>
+    {{/logged}}
+    <p class="mt-4" data-region="log-deleted">
+        <a href="{{deletedurl}}">{{#str}} deletedentries, mod_classprogress {{/str}}</a>
+    </p>
 </div>

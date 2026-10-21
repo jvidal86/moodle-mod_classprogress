@@ -18,9 +18,9 @@
  * Opens a plan activity, for the course's teachers only (REQ-MOD-002, REQ-MOD-003).
  *
  * A draft shows its status, the way to import and approve it, its days and its calendar; a draft without a school
- * year asks for one first (REQ-DAT-006). An approved plan shows its session log: pending, logged and upcoming sessions,
- * with links to log each one, to add an unplanned session, to the history of deleted entries, to the plan's days and
- * to its export.
+ * year asks for one first (REQ-DAT-006). An approved plan shows its session log (log_view): the session to log first,
+ * then the pending, upcoming and logged sessions, with links to log each one, to add an unplanned session, to the
+ * plan's days, to its export and to the history of deleted entries.
  *
  * @package    mod_classprogress
  * @copyright  2026 Jordi Vidal
@@ -54,32 +54,7 @@ echo $OUTPUT->header();
 
 if ($plan->status === plan_service::STATUS_APPROVED) {
     echo $OUTPUT->heading(get_string('log', 'mod_classprogress'), 3);
-    echo html_writer::tag('p', get_string('logintro', 'mod_classprogress'));
-    $actions = [];
-    if ($canedit) {
-        $actions[] = html_writer::link(
-            new \core\url('/mod/classprogress/entry.php', ['id' => $cm->id]),
-            get_string('addunplanned', 'mod_classprogress'),
-            ['class' => 'btn btn-secondary']
-        );
-    }
-    $actions[] = html_writer::link(
-        new \core\url('/mod/classprogress/history.php', ['id' => $cm->id]),
-        get_string('deletedentries', 'mod_classprogress'),
-        ['class' => 'btn btn-link']
-    );
-    $actions[] = html_writer::link(
-        new \core\url('/mod/classprogress/plan.php', ['id' => $cm->id]),
-        get_string('plandays', 'mod_classprogress'),
-        ['class' => 'btn btn-link']
-    );
-    $actions[] = html_writer::link(
-        new \core\url('/mod/classprogress/export.php', ['id' => $cm->id]),
-        get_string('export', 'mod_classprogress'),
-        ['class' => 'btn btn-link']
-    );
-    echo html_writer::tag('p', implode(' ', $actions), ['data-region' => 'log-actions']);
-    echo $OUTPUT->render(new log_view(entry_service::log((int) $USER->id, (int) $plan->id)));
+    echo $OUTPUT->render(new log_view(entry_service::log((int) $USER->id, (int) $plan->id), $canedit));
     echo $OUTPUT->footer();
     exit;
 }

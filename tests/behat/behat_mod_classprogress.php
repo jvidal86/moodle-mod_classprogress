@@ -27,6 +27,7 @@
 
 require_once(__DIR__ . '/../../../../lib/behat/behat_base.php');
 
+use Behat\Mink\Exception\DriverException;
 use Behat\Mink\Exception\ExpectationException;
 
 /**
@@ -42,6 +43,9 @@ use Behat\Mink\Exception\ExpectationException;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class behat_mod_classprogress extends behat_base {
+    /** @var bool Whether the scenario gave the browser a phone screen. */
+    private bool $phonescreen = false;
+
     /**
      * Returns the URL of a page of one plan activity.
      *
@@ -170,6 +174,76 @@ class behat_mod_classprogress extends behat_base {
         if (count(array_unique($counts)) !== 1 || (int) $counts['log page'] < 1) {
             throw new ExpectationException('Pending sessions of "' . $identifier . '" differ or are none: ' .
                 json_encode($counts), $session);
+        }
+    }
+
+    /**
+     * Gives the browser of a JavaScript scenario a phone's screen, through Chrome's DevTools: Chrome cannot make its
+     * window narrower than about 500 px, so "I change viewport size to" stops short of a phone's width.
+     *
+     * The screen stays until the end of the scenario (clear_screen()).
+     *
+     * @Given I use a phone screen :width px wide
+     *
+     * @param int $width Width of the screen, in CSS pixels; its height is 844.
+     * @throws DriverException Without JavaScript, which has no screen.
+     */
+    public function i_use_a_phone_screen(int $width): void {
+        if (!$this->running_javascript()) {
+            throw new DriverException('A phone screen can only be used with JavaScript.');
+        }
+        $this->devtools('Emulation.setDeviceMetricsOverride', ['width' => $width, 'height' => 844, 'deviceScaleFactor' => 1,
+            'mobile' => true]);
+        $this->phonescreen = true;
+    }
+
+    /**
+     * Gives the browser its own screen back after a scenario that used a phone screen; a browser already closed took
+     * the phone screen with it.
+     *
+     * @AfterScenario @javascript
+     */
+    public function clear_screen(): void {
+        if ($this->phonescreen && $this->getSession()->getDriver()->getWebDriver()) {
+            $this->devtools('Emulation.clearDeviceMetricsOverride');
+        }
+        $this->phonescreen = false;
+    }
+
+    /**
+     * Sends a command to the DevTools of the scenario's Chrome browser.
+     *
+     * @param string $command The command, such as Emulation.setDeviceMetricsOverride.
+     * @param array $parameters Its parameters.
+     */
+    private function devtools(string $command, array $parameters = []): void {
+        $webdriver = $this->getSession()->getDriver()->getWebDriver();
+        (new \Facebook\WebDriver\Chrome\ChromeDevToolsDriver($webdriver))->execute($command, $parameters);
+    }
+
+    /**
+     * Checks that the current page does not scroll sideways: the document is no wider than the browser's viewport, and
+     * no table's scrolling wrapper on it is wider than its box (REQ-UIX-004).
+     *
+     * @Then the page should not scroll sideways
+     *
+     * @throws DriverException Without JavaScript, which has no layout to measure.
+     * @throws ExpectationException When the page or a table is wider than the viewport.
+     */
+    public function the_page_should_not_scroll_sideways(): void {
+        if (!$this->running_javascript()) {
+            throw new DriverException('Sideways scrolling can only be checked with JavaScript.');
+        }
+        $widths = $this->evaluate_script('return (function() {
+            const page = document.documentElement;
+            const tables = Array.from(document.querySelectorAll(".table-responsive"))
+                .filter((box) => box.scrollWidth > box.clientWidth)
+                .map((box) => box.scrollWidth + " in " + box.clientWidth);
+            return {viewport: page.clientWidth, page: page.scrollWidth, tables: tables};
+        })();');
+        if ($widths['page'] > $widths['viewport'] || $widths['tables']) {
+            throw new ExpectationException('The page scrolls sideways: it is ' . $widths['page'] . ' px wide in a viewport of ' .
+                $widths['viewport'] . ' px; tables wider than their box: ' . json_encode($widths['tables']), $this->getSession());
         }
     }
 

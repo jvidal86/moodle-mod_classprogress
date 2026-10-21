@@ -124,8 +124,10 @@ class entry_form extends \moodleform {
 
         $buttons = [$mform->createElement('submit', 'submitbutton', get_string('saveentry', 'mod_classprogress'))];
         if ($nextpending > 0) {
+            // A long label, longer still in Catalan, wraps rather than widening a phone's screen.
             $label = get_string('saveandnext', 'mod_classprogress', $nextpending);
-            $buttons[] = $mform->createElement('submit', 'savenext', $label);
+            $wrap = ['customclassoverride' => 'btn-secondary text-wrap'];
+            $buttons[] = $mform->createElement('submit', 'savenext', $label, [], false, $wrap);
         }
         $buttons[] = $mform->createElement('cancel');
         $mform->addGroup($buttons, 'buttonar', '', ' ', false);

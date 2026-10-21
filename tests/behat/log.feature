@@ -32,7 +32,7 @@ Feature: Log what was done in each session
     And I should see "Presentació" in the "[data-region='log-pending']" "css_element"
     And I should see "Entorn" in the "[data-region='log-pending']" "css_element"
     And I should see "Primer programa" in the "[data-region='log-upcoming']" "css_element"
-    And "Presentació" "text" should appear before "Entorn" "text"
+    And "Presentació" "table_row" should appear before "Entorn" "table_row"
     When I click on "Log" "link" in the "Entorn" "table_row"
     Then I should see "Instal·lació de l'IDE" in the "[data-region='planned-day']" "css_element"
     And I set the field "What was done" to "IDE instal·lat a tots els ordinadors"

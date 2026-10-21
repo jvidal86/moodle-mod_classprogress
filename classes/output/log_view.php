@@ -24,27 +24,40 @@ use mod_classprogress\local\access;
 use mod_classprogress\local\plan_log;
 
 /**
- * The log of an approved plan: pending sessions oldest first, then the logged ones (planned and unplanned, by day)
- * with their status and late flag, then the upcoming ones.
+ * The log of an approved plan (REQ-UIX-001, REQ-UIX-002): a card with the session to log, today's or else the next one;
+ * the actions; the pending sessions, oldest first; the upcoming ones, soonest first; the logged ones (planned and
+ * unplanned), newest day first, with their status and late flag; and the link to the deleted entries. The upcoming and
+ * logged lists show their first rows and fold the rest.
  *
- * Block and day titles are exported as typed, for the template to escape.
+ * Every planned row and the card carry the session's block, hours and plan (REQ-UIX-003). Block and day titles are
+ * exported as typed, for the template to escape; the plan goes through format_text() as Markdown with cleaning on, as
+ * on the entry form.
  *
  * @package    mod_classprogress
  * @copyright  2026 Jordi Vidal
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 final class log_view implements \renderable, \templatable {
+    /** @var int Rows listed before the rest of the upcoming or logged sessions is folded. */
+    public const SHOWN = 5;
+
     /** @var int The course module id of the plan activity, for the URLs. */
     private int $cmid = 0;
+
+    /** @var \context|null The activity's context, for format_text(). */
+    private ?\context $context = null;
 
     /**
      * Constructor.
      *
      * @param plan_log $log The plan's log.
+     * @param bool $canedit Whether the user may log sessions, so that the page offers an unplanned one.
      */
     public function __construct(
         /** @var plan_log The plan's log. */
         private readonly plan_log $log,
+        /** @var bool Whether the user may log sessions. */
+        private readonly bool $canedit = false,
     ) {
     }
 
@@ -97,6 +110,7 @@ final class log_view implements \renderable, \templatable {
     #[\Override]
     public function export_for_template(\renderer_base $output): \stdClass {
         $this->cmid = access::cmid($this->log->plan);
+        $this->context = access::context($this->log->plan) ?? \context_system::instance();
         $groups = $this->log->groups;
         $pending = array_map(fn(session_item $item): array => $this->item_row($item), $groups->pending);
         $upcoming = array_map(fn(session_item $item): array => $this->item_row($item), $groups->upcoming);
@@ -107,15 +121,65 @@ final class log_view implements \renderable, \templatable {
         foreach ($this->log->unplanned as $entry) {
             $logged[] = $this->entry_row($entry, null);
         }
+        // Newest day first; the sessions of one day keep their order.
         usort($logged, fn(array $a, array $b): int =>
-            [dates::day_number($a['date']), $a['order']] <=> [dates::day_number($b['date']), $b['order']]);
+            [dates::day_number($b['date']), $a['order']] <=> [dates::day_number($a['date']), $b['order']]);
+        $page = fn(string $script): string => (new url('/mod/classprogress/' . $script, ['id' => $this->cmid]))->out(false);
         return (object) [
-            'haspending' => !empty($pending),
-            'pending' => $pending,
-            'haslogged' => !empty($logged),
-            'logged' => $logged,
-            'hasupcoming' => !empty($upcoming),
-            'upcoming' => $upcoming,
+            'card' => $this->card(),
+            'addurl' => $this->canedit ? $page('entry.php') : '',
+            'planurl' => $page('plan.php'),
+            'exporturl' => $page('export.php'),
+            'deletedurl' => $page('history.php'),
+            'pending' => ['count' => count($pending), 'rows' => $pending, 'primary' => true],
+            'upcoming' => self::folded($upcoming),
+            'logged' => self::folded($logged),
+        ];
+    }
+
+    /**
+     * Splits a list into the rows shown and the rows folded.
+     *
+     * @param array $rows Template contexts of the rows, in order.
+     * @return array Template context: count, rows shown, and more, the folded rows, or null when none is folded.
+     */
+    private static function folded(array $rows): array {
+        return [
+            'count' => count($rows),
+            'rows' => array_slice($rows, 0, self::SHOWN),
+            'more' => count($rows) > self::SHOWN ? ['rows' => array_slice($rows, self::SHOWN)] : null,
+            'primary' => false,
+        ];
+    }
+
+    /**
+     * Exports the session to log first: the first of today without an entry or, when there is none, the next one.
+     *
+     * @return array|null Template context of the card, with istoday; null when no session is left from today on.
+     */
+    private function card(): ?array {
+        $today = array_filter($this->log->groups->pending, fn(session_item $item): bool => $item->date === $this->log->today);
+        $item = reset($today) ?: ($this->log->groups->upcoming[0] ?? null);
+        if ($item === null) {
+            return null;
+        }
+        return ['istoday' => $item->date === $this->log->today] + $this->item_row($item);
+    }
+
+    /**
+     * Exports what a planned row shows of its session: its name and, when opened, its block, hours and plan.
+     *
+     * @param \stdClass $row The plan item row.
+     * @return array Template context.
+     */
+    private function planned(\stdClass $row): array {
+        $title = self::session_title($row);
+        return [
+            'hasplan' => true,
+            'title' => $title === '' ? $row->sessiondate : $title,
+            'block' => $row->block,
+            'hours' => $row->hours === null ? '' : format_float((float) $row->hours, 2, true, true),
+            'content' => format_text($row->content, FORMAT_MARKDOWN, ['context' => $this->context]),
         ];
     }
 
@@ -129,10 +193,8 @@ final class log_view implements \renderable, \templatable {
         $row = $this->log->items[$item->id];
         return [
             'date' => $row->sessiondate,
-            'block' => $row->block,
-            'title' => $row->title,
             'logurl' => (new url('/mod/classprogress/entry.php', ['id' => $this->cmid, 'itemid' => $item->id]))->out(false),
-        ];
+        ] + $this->planned($row);
     }
 
     /**
@@ -143,18 +205,18 @@ final class log_view implements \renderable, \templatable {
      * @return array Template context for the row, with order, the position among entries of the same day.
      */
     private function entry_row(\stdClass $entry, ?\stdClass $item): array {
+        $unplanned = ['hasplan' => false, 'title' => get_string('unplannedsession', 'mod_classprogress'), 'block' => ''];
         return [
             'date' => $entry->sessiondate,
             // Plan items keep the order of the text; unplanned sessions follow them, in the order they were added.
             'order' => $item === null ? intdiv(PHP_INT_MAX, 2) + (int) $entry->id : (int) $item->sortorder,
-            'block' => $item === null ? '' : $item->block,
-            'title' => $item === null ? get_string('unplannedsession', 'mod_classprogress') : $item->title,
+            'done' => self::first_line($entry->content, 80),
             'status' => get_string('entrystatus_' . $entry->status, 'mod_classprogress'),
             'writtenon' => $entry->writtenon,
             'late' => self::late($this->log->days_late($entry)),
             'editurl' => (new url('/mod/classprogress/entry.php', ['id' => $this->cmid, 'entryid' => $entry->id]))->out(false),
             'historyurl' => (new url('/mod/classprogress/history.php', ['id' => $this->cmid, 'entryid' => $entry->id]))
                 ->out(false),
-        ];
+        ] + ($item === null ? $unplanned : $this->planned($item));
     }
 }

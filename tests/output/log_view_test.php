@@ -96,6 +96,165 @@ final class log_view_test extends \advanced_testcase {
     }
 
     /**
+     * Creates an approved plan of the current user, with items dated relative to today.
+     *
+     * @param array $items Plan item fields, each with days: the session's day relative to today.
+     * @return array The plan and its items, keyed by title.
+     */
+    private function plan_with_items(array $items): array {
+        $course = $this->getDataGenerator()->create_course();
+        $user = $this->getDataGenerator()->create_and_enrol($course, 'editingteacher');
+        $this->setUser($user);
+        $gen = $this->getDataGenerator()->get_plugin_generator('mod_classprogress');
+        $plan = $gen->create_instance(['course' => $course->id, 'status' => 'approved']);
+        $today = new \DateTimeImmutable(entry_service::today((int) $user->id));
+        $rows = [];
+        foreach ($items as $item) {
+            $date = $today->modify(sprintf('%+d days', $item['days']))->format('Y-m-d');
+            unset($item['days']);
+            $rows[$item['title']] = $gen->create_item(['planid' => $plan->id, 'sessiondate' => $date] + $item);
+        }
+        return [$plan, $rows];
+    }
+
+    /**
+     * Exports the log of a plan for its template.
+     *
+     * @param \stdClass $plan The plan.
+     * @return \stdClass The template context.
+     */
+    private static function export(\stdClass $plan): \stdClass {
+        global $PAGE, $USER;
+
+        $log = entry_service::log((int) $USER->id, (int) $plan->id);
+        return (new log_view($log, true))->export_for_template($PAGE->get_renderer('core'));
+    }
+
+    /**
+     * The card shows the first session of today that has no entry, with its plan and "Log this session"; then the
+     * next session after today, with "Log a cancellation"; and no card when no session is left from today on.
+     *
+     * @group REQ-UIX-001
+     */
+    public function test_the_card_shows_todays_session_then_the_next_one(): void {
+        $this->resetAfterTest();
+        $this->mock_clock_with_frozen(1792317600);
+        [$plan, $items] = $this->plan_with_items([
+            ['days' => -3, 'title' => 'Ahir'],
+            ['days' => 0, 'title' => 'Primera hora'],
+            ['days' => 0, 'title' => 'Segona hora', 'block' => 'RA2', 'hours' => 1.5, 'content' => '- **Triggers**'],
+            ['days' => 2, 'title' => 'Dilluns'],
+            ['days' => 5, 'title' => 'Dijous'],
+        ]);
+        $create = function (string $title, string $status, string $reason = '') use ($plan, $items): void {
+            global $USER;
+            $data = new entry_data($status, 'Fet', $reason);
+            entry_service::create((int) $USER->id, (int) $plan->id, (int) $items[$title]->id, $data);
+        };
+        $itemid = fn(\stdClass $context): int => (int) (new \core\url($context->card['logurl']))->get_param('itemid');
+
+        $create('Primera hora', entry_rules::DONE);
+        $card = self::export($plan)->card;
+        $this->assertTrue($card['istoday']);
+        $this->assertSame('Segona hora', $card['title']);
+        $this->assertSame($items['Segona hora']->sessiondate, $card['date']);
+        $this->assertSame(['RA2', '1.5'], [$card['block'], $card['hours']]);
+        $this->assertStringContainsString('<strong>Triggers</strong>', $card['content']);
+        $this->assertSame((int) $items['Segona hora']->id, $itemid(self::export($plan)));
+
+        $create('Segona hora', entry_rules::DONE);
+        $context = self::export($plan);
+        $this->assertFalse($context->card['istoday']);
+        $this->assertSame('Dilluns', $context->card['title']);
+        $this->assertSame((int) $items['Dilluns']->id, $itemid($context));
+
+        $create('Dilluns', entry_rules::NOT_DONE, 'strike');
+        $this->assertSame('Dijous', self::export($plan)->card['title']);
+        $create('Dijous', entry_rules::NOT_DONE, 'trip');
+        $context = self::export($plan);
+        $this->assertNull($context->card);
+        $this->assertSame(['Ahir'], array_column($context->pending['rows'], 'title'));
+    }
+
+    /**
+     * Pending sessions are all listed, oldest first; upcoming sessions list the next five and fold the others; logged
+     * sessions list the latest five, newest first, and fold the others. Each list gives its count.
+     *
+     * @group REQ-UIX-002
+     * @group REQ-LOG-001
+     */
+    public function test_the_lists_show_five_and_fold_the_rest(): void {
+        global $USER;
+
+        $this->resetAfterTest();
+        $this->mock_clock_with_frozen(1792317600);
+        $items = [];
+        foreach (range(1, 7) as $n) {
+            $items[] = ['days' => -30 + $n, 'title' => "Passada {$n}"];
+            $items[] = ['days' => $n, 'title' => "Futura {$n}"];
+        }
+        $items[] = ['days' => -2, 'title' => 'Pendent B'];
+        $items[] = ['days' => -4, 'title' => 'Pendent A'];
+        [$plan, $rows] = $this->plan_with_items($items);
+        foreach (range(1, 7) as $n) {
+            $data = new entry_data(entry_rules::DONE, "Fet {$n}");
+            entry_service::create((int) $USER->id, (int) $plan->id, (int) $rows["Passada {$n}"]->id, $data);
+        }
+
+        $context = self::export($plan);
+
+        $this->assertSame(2, $context->pending['count']);
+        $this->assertSame(['Pendent A', 'Pendent B'], array_column($context->pending['rows'], 'title'));
+        $this->assertNull($context->pending['more'] ?? null);
+        $this->assertSame(7, $context->upcoming['count']);
+        $shown = ['Futura 1', 'Futura 2', 'Futura 3', 'Futura 4', 'Futura 5'];
+        $this->assertSame($shown, array_column($context->upcoming['rows'], 'title'));
+        $this->assertSame(['Futura 6', 'Futura 7'], array_column($context->upcoming['more']['rows'], 'title'));
+        $this->assertSame(7, $context->logged['count']);
+        $shown = ['Passada 7', 'Passada 6', 'Passada 5', 'Passada 4', 'Passada 3'];
+        $this->assertSame($shown, array_column($context->logged['rows'], 'title'));
+        $this->assertSame(['Passada 2', 'Passada 1'], array_column($context->logged['more']['rows'], 'title'));
+    }
+
+    /**
+     * Every row carries its session's block, hours and planned content, rendered as on the entry form; a logged row
+     * also carries the first line of what was done; a session without a title is named by its plan.
+     *
+     * @group REQ-UIX-003
+     * @group REQ-LCK-003
+     */
+    public function test_every_row_carries_its_plan(): void {
+        global $USER;
+
+        $this->resetAfterTest();
+        $this->mock_clock_with_frozen(1792317600);
+        $payload = '<script>alert(1)</script>[enllaç](javascript:alert(2))';
+        [$plan, $rows] = $this->plan_with_items([
+            ['days' => -7, 'title' => 'Feta', 'block' => 'RA1', 'hours' => 2, 'content' => "- **Normes** {$payload}"],
+            ['days' => -1, 'title' => 'Pendent', 'block' => 'RA1', 'hours' => 1, 'content' => 'Model E/R'],
+            ['days' => 3, 'title' => '', 'block' => 'RA2', 'hours' => 2, 'content' => "- Repàs del tema 1\n- Exercicis"],
+        ]);
+        $done = new entry_data(entry_rules::DONE, "Normes explicades\n\nI una prova");
+        entry_service::create((int) $USER->id, (int) $plan->id, (int) $rows['Feta']->id, $done);
+
+        $context = self::export($plan);
+
+        $logged = $context->logged['rows'][0];
+        $this->assertTrue($logged['hasplan']);
+        $this->assertSame(['RA1', '2'], [$logged['block'], $logged['hours']]);
+        $this->assertStringContainsString('<strong>Normes</strong>', $logged['content']);
+        $this->assertStringNotContainsString('<script', $logged['content']);
+        $this->assertStringNotContainsString('javascript:', $logged['content']);
+        $this->assertSame('Normes explicades', $logged['done']);
+        $pending = $context->pending['rows'][0];
+        $this->assertSame(['Pendent', 'RA1', '1'], [$pending['title'], $pending['block'], $pending['hours']]);
+        $this->assertStringContainsString('Model E/R', $pending['content']);
+        $upcoming = $context->upcoming['rows'][0];
+        $this->assertSame('Repàs del tema 1', $upcoming['title']);
+        $this->assertStringContainsString('<li>Exercicis</li>', $upcoming['content']);
+    }
+
+    /**
      * A date with two planned days (REQ-PLN-010) shows both sessions on the log, in plan order, each with its own link,
      * and each is logged with its own entry; after both, nothing is pending (R3-2).
      *
@@ -120,23 +279,24 @@ final class log_view_test extends \advanced_testcase {
         $itemid = fn(string $url): int => (int) (new \core\url($url))->get_param('itemid');
 
         $before = $log();
-        $this->assertSame(['Primera hora', 'Segona hora'], array_column($before->pending, 'title'));
-        $this->assertSame(['2026-10-15', '2026-10-15'], array_column($before->pending, 'date'));
-        $this->assertSame([(int) $first->id, (int) $second->id], array_map($itemid, array_column($before->pending, 'logurl')));
+        $this->assertSame(['Primera hora', 'Segona hora'], array_column($before->pending['rows'], 'title'));
+        $this->assertSame(['2026-10-15', '2026-10-15'], array_column($before->pending['rows'], 'date'));
+        $urls = array_column($before->pending['rows'], 'logurl');
+        $this->assertSame([(int) $first->id, (int) $second->id], array_map($itemid, $urls));
 
         $done = new entry_data(entry_rules::DONE, 'Primera part feta');
         $firstentry = entry_service::create($user->id, (int) $plan->id, (int) $first->id, $done);
         $between = $log();
-        $this->assertSame(['Segona hora'], array_column($between->pending, 'title'));
-        $this->assertSame(['Primera hora'], array_column($between->logged, 'title'));
+        $this->assertSame(['Segona hora'], array_column($between->pending['rows'], 'title'));
+        $this->assertSame(['Primera hora'], array_column($between->logged['rows'], 'title'));
 
         $partial = new entry_data(entry_rules::PARTIAL, 'Segona part a mitges', 'incident');
         $secondentry = entry_service::create($user->id, (int) $plan->id, (int) $second->id, $partial);
         $after = $log();
-        $this->assertSame([], $after->pending);
-        $this->assertSame(['Primera hora', 'Segona hora'], array_column($after->logged, 'title'));
+        $this->assertSame([], $after->pending['rows']);
+        $this->assertSame(['Primera hora', 'Segona hora'], array_column($after->logged['rows'], 'title'));
         $this->assertSame([get_string('entrystatus_done', 'mod_classprogress'),
-            get_string('entrystatus_partial', 'mod_classprogress')], array_column($after->logged, 'status'));
+            get_string('entrystatus_partial', 'mod_classprogress')], array_column($after->logged['rows'], 'status'));
         $this->assertNotSame($firstentry, $secondentry);
         $this->assertSame($firstentry, (int) entry_service::for_item($user->id, (int) $first->id)->id);
         $this->assertSame($secondentry, (int) entry_service::for_item($user->id, (int) $second->id)->id);

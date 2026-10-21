@@ -1,0 +1,47 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_classprogress/log_session
+
+    The title of a session in a table of the log page: for a planned session, a <details> that opens to show its block,
+    hours and plan; below md, the block under it.
+
+    Context variables required for this template:
+    * hasplan - Whether the session is planned.
+    * title, block, hours - As typed, escaped here; hours empty when unknown.
+    * content - The plan, already through format_text().
+
+    Example context (json):
+    {
+        "hasplan": true,
+        "title": "Entorn",
+        "block": "RA1 · Reconeix els elements",
+        "hours": "2",
+        "content": "<ul><li>Instal·lació de l'IDE</li></ul>"
+    }
+}}
+{{#hasplan}}
+    <details>
+        <summary>{{title}}</summary>
+        <p class="small text-muted mb-1">{{#hours}}{{hours}} h{{#block}} · {{/block}}{{/hours}}{{block}}</p>
+        {{{content}}}
+    </details>
+    {{#block}}<div class="d-md-none small text-muted">{{block}}</div>{{/block}}
+{{/hasplan}}
+{{^hasplan}}
+    {{title}}
+{{/hasplan}}
