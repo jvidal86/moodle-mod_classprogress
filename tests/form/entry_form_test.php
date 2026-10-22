@@ -174,6 +174,45 @@ final class entry_form_test extends \advanced_testcase {
     }
 
     /**
+     * The form posts its own kind, so that a cancellation in advance saved after midnight keeps its shape (R6-2).
+     *
+     * @group REQ-UIX-005
+     * @group REQ-LOG-009
+     */
+    public function test_the_form_posts_its_kind(): void {
+        foreach ([[$this->future, true, '1'], [$this->past, false, '0']] as [$item, $future, $value]) {
+            $hidden = self::dom($this->form($item, $future))->query("//input[@type='hidden'][@name='future']");
+            $this->assertSame(1, $hidden->length);
+            $this->assertSame($value, $hidden->item(0)->getAttribute('value'));
+        }
+    }
+
+    /**
+     * With one pending session left the second button reads in the singular, which Catalan and Spanish need (R6-5).
+     *
+     * @group REQ-UIX-006
+     */
+    public function test_one_pending_session_left_reads_in_the_singular(): void {
+        global $CFG;
+
+        // The smallest Catalan language pack: Moodle then reads the activity's own lang/ca.
+        $dir = $CFG->dataroot . '/lang/ca';
+        check_dir_exists($dir);
+        file_put_contents($dir . '/langconfig.php', "<?php\n\$string['thislanguage'] = 'ca';\n\$string['parentlanguage'] = '';\n");
+        get_string_manager()->reset_caches();
+        $previous = force_current_language('ca');
+        try {
+            $buttons = self::dom($this->form($this->past, false, 1))->query("//input[@type='submit'][@name='savenext']");
+            $this->assertSame('Desa i registra la sessió pendent següent (en queda 1)', $buttons->item(0)->getAttribute('value'));
+        } finally {
+            force_current_language($previous);
+            unlink($dir . '/langconfig.php');
+            rmdir($dir);
+            get_string_manager()->reset_caches();
+        }
+    }
+
+    /**
      * The note and the corrective measure are smaller text boxes than what was done.
      *
      * @group REQ-UIX-007

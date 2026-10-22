@@ -297,6 +297,7 @@ $string['reason_teacher_absent'] = 'Teacher absent';
 $string['reason_trip'] = 'Trip';
 $string['resetentries'] = 'Delete the logged sessions and their history (the plans stay)';
 $string['saveandnext'] = 'Save and log the next pending session ({$a} left)';
+$string['saveandnextone'] = 'Save and log the next pending session (1 left)';
 $string['savedraft'] = 'Save draft';
 $string['saveentry'] = 'Save entry';
 $string['schoolyear'] = 'School year';

@@ -39,7 +39,8 @@ require_once($CFG->libdir . '/formslib.php');
  * version.
  *
  * Custom data: userid, the acting user; planid; itemid, the plan item, or null for an unplanned session; future,
- * whether the plan item is after today; nextpending, how many pending sessions are left after this one.
+ * whether the plan item is after today, or was when the form was opened (posted as the hidden field future);
+ * nextpending, how many pending sessions are left after this one.
  *
  * @package    mod_classprogress
  * @copyright  2026 Jordi Vidal
@@ -74,6 +75,9 @@ class entry_form extends \moodleform {
             $mform->addElement('hidden', $hidden, 0);
             $mform->setType($hidden, PARAM_INT);
         }
+        // The form posts its own kind, so that a cancellation in advance saved after midnight keeps its shape (R6-2).
+        $mform->addElement('hidden', 'future', $future ? 1 : 0);
+        $mform->setType('future', PARAM_BOOL);
 
         if ($future) {
             $mform->addElement('hidden', 'status', entry_rules::NOT_DONE);
@@ -87,7 +91,9 @@ class entry_form extends \moodleform {
                 $label = get_string('entrystatus_' . $status, 'mod_classprogress');
                 $radios[] = $mform->createElement('radio', 'status', '', $label, $status);
             }
-            $mform->addGroup($radios, 'statusgroup', get_string('status', 'mod_classprogress'), ' ', false);
+            // Clearly apart, with room between them for a finger; on a narrow screen they wrap (R6-9).
+            $apart = \html_writer::span('', 'mr-3 me-3');
+            $mform->addGroup($radios, 'statusgroup', get_string('status', 'mod_classprogress'), $apart, false);
             $mform->setType('status', PARAM_ALPHAEXT);
             $mform->setDefault('status', entry_rules::DONE);
         } else {
@@ -125,7 +131,8 @@ class entry_form extends \moodleform {
         $buttons = [$mform->createElement('submit', 'submitbutton', get_string('saveentry', 'mod_classprogress'))];
         if ($nextpending > 0) {
             // A long label, longer still in Catalan, wraps rather than widening a phone's screen.
-            $label = get_string('saveandnext', 'mod_classprogress', $nextpending);
+            $label = $nextpending === 1 ? get_string('saveandnextone', 'mod_classprogress')
+                : get_string('saveandnext', 'mod_classprogress', $nextpending);
             $wrap = ['customclassoverride' => 'btn-secondary text-wrap'];
             $buttons[] = $mform->createElement('submit', 'savenext', $label, [], false, $wrap);
         }

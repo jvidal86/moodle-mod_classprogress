@@ -85,6 +85,20 @@ Feature: Log a session with few clicks
     Then I should see "Edited"
     And I should see "Sortida ajornada"
 
+  @REQ-UIX-005 @REQ-LOG-009
+  Scenario: A cancellation in advance saved after midnight keeps its form, and what was done
+    Given the following "mod_classprogress > entries" exist:
+      | planitem        | status   | reason | content                       | user     |
+      | Primer programa | not_done | trip   | Avisats per correu el dilluns | teacher1 |
+    And I am on the "Bases de dades" "classprogress activity" page logged in as "teacher1"
+    When I click on "Edit entry" "link" in the "Primer programa" "table_row"
+    And I set the field "Note about the reason" to "Sortida ajornada"
+    And the day of the session "Primer programa" comes for "teacher1"
+    And I press "Save entry"
+    Then I should see "Entry saved."
+    And I should see "Not done" in the "Primer programa" "table_row"
+    And I should see "Avisats per correu el dilluns" in the "Primer programa" "table_row"
+
   @REQ-UIX-006
   Scenario: Save and log the next pending session goes from one pending session to the next, oldest first
     Given I am on the "Bases de dades" "classprogress activity" page logged in as "teacher1"

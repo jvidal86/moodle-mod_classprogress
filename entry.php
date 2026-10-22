@@ -112,7 +112,10 @@ $pending = function () use ($USER, $planid): array {
     $sessions = entry_service::log((int) $USER->id, $planid)->groups->pending;
     return array_map(fn(session_item $session): int => $session->id, $sessions);
 };
-$future = $item && dates::day_number($item->sessiondate) > dates::day_number(entry_service::today((int) $USER->id));
+// A form opened for a session after today posts that it was, and keeps its shape when saved after midnight (R6-2). A
+// tampered flag only turns a session's form into a cancellation's: not done, with the stored text kept.
+$future = $item && (dates::day_number($item->sessiondate) > dates::day_number(entry_service::today((int) $USER->id))
+    || optional_param('future', 0, PARAM_BOOL));
 $form = new entry_form($url, ['userid' => (int) $USER->id, 'planid' => $planid, 'itemid' => $item ? (int) $item->id : null,
     'future' => $future, 'nextpending' => count(array_diff($pending(), $item ? [(int) $item->id] : []))]);
 $stale = false;

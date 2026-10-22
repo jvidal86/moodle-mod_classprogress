@@ -299,6 +299,22 @@ class behat_mod_classprogress extends behat_base {
     }
 
     /**
+     * The plan item of a session moves to the user's today, as if midnight had passed while its form was open.
+     *
+     * @Given the day of the session :title comes for :username
+     *
+     * @param string $title Title of the plan item.
+     * @param string $username The user whose today it becomes.
+     */
+    public function the_day_of_the_session_comes(string $title, string $username): void {
+        global $DB;
+
+        $userid = $DB->get_field('user', 'id', ['username' => $username], MUST_EXIST);
+        $today = \mod_classprogress\local\entry_service::today((int) $userid);
+        $DB->set_field('classprogress_item', 'sessiondate', $today, ['title' => $title]);
+    }
+
+    /**
      * Opens a page of the site.
      *
      * @param moodle_url $url The page.
