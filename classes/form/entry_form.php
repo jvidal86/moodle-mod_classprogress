@@ -91,8 +91,9 @@ class entry_form extends \moodleform {
                 $label = get_string('entrystatus_' . $status, 'mod_classprogress');
                 $radios[] = $mform->createElement('radio', 'status', '', $label, $status);
             }
-            // Clearly apart, with room between them for a finger; on a narrow screen they wrap (R6-9).
-            $apart = \html_writer::span('', 'mr-3 me-3');
+            // Clearly apart, with room between them for a finger; on a narrow screen they wrap (R6-9). mx-2 exists in
+            // Bootstrap 4 and 5, where mr-* is deprecated.
+            $apart = \html_writer::span('', 'mx-2');
             $mform->addGroup($radios, 'statusgroup', get_string('status', 'mod_classprogress'), $apart, false);
             $mform->setType('status', PARAM_ALPHAEXT);
             $mform->setDefault('status', entry_rules::DONE);
