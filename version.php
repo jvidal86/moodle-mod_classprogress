@@ -32,5 +32,5 @@ $plugin->release   = '0.10.0';
 $plugin->maturity  = MATURITY_BETA;
 $plugin->dependencies = [
     // School years, holidays and evaluation periods, and the plan, calendar and entry rules library.
-    'local_classprogress' => 2026102000,
+    'local_classprogress' => 2026102200,
 ];

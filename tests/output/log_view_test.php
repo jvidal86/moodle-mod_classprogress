@@ -255,6 +255,102 @@ final class log_view_test extends \advanced_testcase {
     }
 
     /**
+     * An entry, and an untitled session's plan, holding U+E000 or U+E001 (the private-use characters the Markdown
+     * converter of local_classprogress 0.9.0 looped on) render on the log page, with the characters as typed (R6-1).
+     *
+     * @group REQ-UIX-003
+     */
+    public function test_text_with_private_use_characters_renders(): void {
+        global $PAGE, $USER;
+
+        $this->resetAfterTest();
+        $this->mock_clock_with_frozen(1792317600);
+        [$plan, $rows] = $this->plan_with_items([
+            ['days' => -2, 'title' => 'Feta'],
+            ['days' => 2, 'title' => '', 'content' => "- Pla \u{E000}0\u{E001} enganxat"],
+        ]);
+        $done = new entry_data(entry_rules::DONE, "Fet amb un caràcter \u{E000} enganxat");
+        entry_service::create((int) $USER->id, (int) $plan->id, (int) $rows['Feta']->id, $done);
+
+        $context = self::export($plan);
+        $html = $PAGE->get_renderer('core')->render(new log_view(entry_service::log((int) $USER->id, (int) $plan->id), true));
+
+        $this->assertSame("Fet amb un caràcter \u{E000} enganxat", $context->logged['rows'][0]['done']);
+        $this->assertSame("Pla \u{E000}0\u{E001} enganxat", $context->upcoming['rows'][0]['title']);
+        $this->assertStringContainsString("Fet amb un caràcter \u{E000} enganxat", $html);
+    }
+
+    /**
+     * Renders the log page of a plan.
+     *
+     * @param \stdClass $plan The plan.
+     * @param bool $canedit Whether the user may log sessions.
+     * @return \DOMXPath The page's document.
+     */
+    private static function page(\stdClass $plan, bool $canedit): \DOMXPath {
+        global $PAGE, $USER;
+
+        $view = new log_view(entry_service::log((int) $USER->id, (int) $plan->id), $canedit);
+        $doc = new \DOMDocument();
+        @$doc->loadHTML('<?xml encoding="utf-8"?>' . $PAGE->get_renderer('core')->render($view));
+        return new \DOMXPath($doc);
+    }
+
+    /**
+     * The card's button is the page's main action for today's session; for a later one, a cancellation, it steps back
+     * so that today's and the pending sessions stay the main actions (R6-4).
+     *
+     * @group REQ-UIX-001
+     */
+    public function test_the_card_button_steps_back_for_a_later_session(): void {
+        global $USER;
+
+        $this->resetAfterTest();
+        $this->mock_clock_with_frozen(1792317600);
+        [$plan, $rows] = $this->plan_with_items([['days' => 0, 'title' => 'Avui'], ['days' => 3, 'title' => 'Dijous']]);
+        $button = fn(): string => self::page($plan, true)->query("//section[@data-region='log-card']//a")->item(0)
+            ->getAttribute('class');
+
+        $this->assertStringContainsString('btn-primary', $button());
+        entry_service::create((int) $USER->id, (int) $plan->id, (int) $rows['Avui']->id, new entry_data(entry_rules::DONE, 'Fet'));
+        $this->assertStringContainsString('btn-outline-secondary', $button());
+        $this->assertStringNotContainsString('btn-primary', $button());
+    }
+
+    /**
+     * Without the capability to log sessions, the log page offers no link to the entry form: no card button, no Log
+     * button, no Edit entry link and no unplanned session; the card, the rows and the histories stay (R6-6).
+     *
+     * @group REQ-UIX-001
+     * @group REQ-UIX-002
+     */
+    public function test_without_the_edit_capability_nothing_links_to_the_entry_form(): void {
+        global $USER;
+
+        $this->resetAfterTest();
+        $this->mock_clock_with_frozen(1792317600);
+        [$plan, $rows] = $this->plan_with_items([
+            ['days' => -3, 'title' => 'Feta'],
+            ['days' => -1, 'title' => 'Pendent'],
+            ['days' => 0, 'title' => 'Avui'],
+            ['days' => 2, 'title' => 'Futura'],
+        ]);
+        entry_service::create((int) $USER->id, (int) $plan->id, (int) $rows['Feta']->id, new entry_data(entry_rules::DONE, 'Fet'));
+        $entrylinks = "//a[contains(@href, '/mod/classprogress/entry.php')]";
+
+        $viewer = self::page($plan, false);
+        $this->assertSame(0, $viewer->query($entrylinks)->length);
+        $this->assertSame(1, $viewer->query("//section[@data-region='log-card']")->length);
+        $this->assertSame(1, $viewer->query("//a[contains(@href, '/mod/classprogress/history.php') and contains(@href, 'entryid')]")
+            ->length);
+        foreach (['Feta', 'Pendent', 'Avui', 'Futura'] as $title) {
+            $this->assertSame(1, $viewer->query("//tr[.//summary[normalize-space(.) = '{$title}']]")->length, $title);
+        }
+        // Card, two pending and one upcoming Log buttons, Edit entry and the unplanned session.
+        $this->assertSame(6, self::page($plan, true)->query($entrylinks)->length);
+    }
+
+    /**
      * A date with two planned days (REQ-PLN-010) shows both sessions on the log, in plan order, each with its own link,
      * and each is logged with its own entry; after both, nothing is pending (R3-2).
      *

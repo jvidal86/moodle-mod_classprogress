@@ -24,10 +24,12 @@
     * rows - The sessions, each with date; hasplan, true; title, block and hours (as typed, escaped here); content, the
       plan already through format_text(); and logurl.
     * primary - Whether the Log buttons are the page's primary ones.
+    * canedit - Whether the user may log sessions; without it, the rows have no Log button.
 
     Example context (json):
     {
         "primary": true,
+        "canedit": true,
         "rows": [{"date": "2026-10-16", "hasplan": true, "title": "Entorn", "block": "RA1 · Reconeix els elements",
             "hours": "2", "content": "<ul><li>Instal·lació de l'IDE</li></ul>",
             "logurl": "https://example.com/mod/classprogress/entry.php?id=1&itemid=2"}]
@@ -40,7 +42,7 @@
                 <th scope="col">{{#str}} date, mod_classprogress {{/str}}</th>
                 <th scope="col" class="d-none d-md-table-cell">{{#str}} block, mod_classprogress {{/str}}</th>
                 <th scope="col">{{#str}} daytitle, mod_classprogress {{/str}}</th>
-                <th scope="col"><span class="accesshide">{{#str}} actions {{/str}}</span></th>
+                {{#canedit}}<th scope="col"><span class="accesshide">{{#str}} actions {{/str}}</span></th>{{/canedit}}
             </tr>
         </thead>
         <tbody>
@@ -51,7 +53,7 @@
                     <td class="text-break">
                         {{> mod_classprogress/log_session }}
                     </td>
-                    <td><a class="btn {{#primary}}btn-primary{{/primary}}{{^primary}}btn-secondary{{/primary}} btn-sm" href="{{logurl}}">{{#str}} logsession, mod_classprogress {{/str}}</a></td>
+                    {{#canedit}}<td><a class="btn {{#primary}}btn-primary{{/primary}}{{^primary}}btn-secondary{{/primary}} btn-sm" href="{{logurl}}">{{#str}} logsession, mod_classprogress {{/str}}</a></td>{{/canedit}}
                 </tr>
             {{/rows}}
         </tbody>

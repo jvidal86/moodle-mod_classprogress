@@ -51,7 +51,7 @@ final class log_view implements \renderable, \templatable {
      * Constructor.
      *
      * @param plan_log $log The plan's log.
-     * @param bool $canedit Whether the user may log sessions, so that the page offers an unplanned one.
+     * @param bool $canedit Whether the user may log sessions; without it, nothing on the page links to the entry form.
      */
     public function __construct(
         /** @var plan_log The plan's log. */
@@ -127,6 +127,7 @@ final class log_view implements \renderable, \templatable {
         $page = fn(string $script): string => (new url('/mod/classprogress/' . $script, ['id' => $this->cmid]))->out(false);
         return (object) [
             'card' => $this->card(),
+            'canedit' => $this->canedit,
             'addurl' => $this->canedit ? $page('entry.php') : '',
             'planurl' => $page('plan.php'),
             'exporturl' => $page('export.php'),

@@ -18,16 +18,18 @@
     @template mod_classprogress/log_entries
 
     A table of sessions with an entry, for the log page. Each planned title opens in place to show the session's block,
-    hours and plan; under it, the first line of what was done. Below md the block and written-on columns move into the
-    row (the block under the title, the late badge under the date) and the actions stack.
+    hours and plan; under it, the first line of what was done. Below md the block, status and written-on columns move
+    into the row (the block and the status under the title, the late badge under the date) and the actions stack.
 
     Context variables required for this template:
     * rows - The sessions, each with date; hasplan, false for an unplanned session; title, block and hours (as typed,
       escaped here); content, the plan already through format_text(); done, the first line of what was done; status;
       writtenon; late, empty when not late; editurl and historyurl.
+    * canedit - Whether the user may log sessions; without it, the rows have no Edit entry link.
 
     Example context (json):
     {
+        "canedit": true,
         "rows": [{"date": "2026-10-12", "hasplan": true, "title": "Presentació", "block": "RA1", "hours": "2",
             "content": "<p>Normes de l'aula</p>", "done": "Normes explicades", "status": "Done",
             "writtenon": "2026-10-15", "late": "Late by 3 days",
@@ -42,7 +44,7 @@
                 <th scope="col">{{#str}} date, mod_classprogress {{/str}}</th>
                 <th scope="col" class="d-none d-md-table-cell">{{#str}} block, mod_classprogress {{/str}}</th>
                 <th scope="col">{{#str}} daytitle, mod_classprogress {{/str}}</th>
-                <th scope="col">{{#str}} status, mod_classprogress {{/str}}</th>
+                <th scope="col" class="d-none d-md-table-cell">{{#str}} status, mod_classprogress {{/str}}</th>
                 <th scope="col" class="d-none d-md-table-cell">{{#str}} writtenon, mod_classprogress {{/str}}</th>
                 <th scope="col"><span class="accesshide">{{#str}} actions {{/str}}</span></th>
             </tr>
@@ -57,12 +59,13 @@
                     <td class="d-none d-md-table-cell">{{block}}</td>
                     <td class="text-break">
                         {{> mod_classprogress/log_session }}
+                        <div class="d-md-none small">{{status}}</div>
                         {{#done}}<div class="small text-muted">{{done}}</div>{{/done}}
                     </td>
-                    <td>{{status}}</td>
+                    <td class="d-none d-md-table-cell">{{status}}</td>
                     <td class="d-none d-md-table-cell">{{writtenon}}{{#late}} <span class="badge bg-warning text-dark">{{late}}</span>{{/late}}</td>
                     <td>
-                        <a class="d-block d-md-inline py-1 py-md-0" href="{{editurl}}">{{#str}} editentry, mod_classprogress {{/str}}</a><span class="d-none d-md-inline"> · </span><a class="d-block d-md-inline py-1 py-md-0" href="{{historyurl}}">{{#str}} history, mod_classprogress {{/str}}</a>
+                        {{#canedit}}<a class="d-block d-md-inline py-1 py-md-0" href="{{editurl}}">{{#str}} editentry, mod_classprogress {{/str}}</a><span class="d-none d-md-inline"> · </span>{{/canedit}}<a class="d-block d-md-inline py-1 py-md-0" href="{{historyurl}}">{{#str}} history, mod_classprogress {{/str}}</a>
                     </td>
                 </tr>
             {{/rows}}

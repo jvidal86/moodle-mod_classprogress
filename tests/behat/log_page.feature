@@ -169,6 +169,7 @@ Feature: The log page leads with the session to log
     And I use a phone screen "390" px wide
     And I am on the "Bases de dades" "classprogress activity" page logged in as "teacher1"
     Then the page should not scroll sideways
+    And every word of the session titles fits in its column
     And I should see "Late by 40 days" in the "Presentació del mòdul i de les normes d'aula" "table_row"
     And I should see "Bloc A · Els elements" in the "Presentació del mòdul i de les normes d'aula" "table_row"
     And I should not see "Written on" in the "[data-region='log-logged']" "css_element"
@@ -202,6 +203,7 @@ Feature: The log page leads with the session to log
     And I should see "Amb 40 dies de retard" in the "Presentació del mòdul i de les normes d'aula" "table_row"
     And I should see "Edita el registre" in the "Presentació del mòdul i de les normes d'aula" "table_row"
     And the page should not scroll sideways
+    And every word of the session titles fits in its column
     And the page should meet accessibility standards
     When I click on "Registra" "link" in the "Model E/R" "table_row"
     Then "Desa i registra la sessió pendent següent (en queden 2)" "button" should exist

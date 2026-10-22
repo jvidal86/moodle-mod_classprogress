@@ -299,6 +299,42 @@ class behat_mod_classprogress extends behat_base {
     }
 
     /**
+     * Checks that no word of a session's title on the log page has to break in the middle: each one fits in the width
+     * of its column. Titles may break anywhere when a word cannot fit, which on a phone made names hard to read (R6-3).
+     *
+     * @Then every word of the session titles fits in its column
+     *
+     * @throws DriverException Without JavaScript, which has no layout to measure.
+     * @throws ExpectationException When a word is wider than its column.
+     */
+    public function every_word_of_the_session_titles_fits(): void {
+        if (!$this->running_javascript()) {
+            throw new DriverException('Widths can only be measured with JavaScript.');
+        }
+        $tight = $this->evaluate_script('return (function() {
+            const tight = [];
+            document.querySelectorAll(".mod_classprogress-log td summary").forEach((summary) => {
+                const words = summary.textContent.trim().split(/\\s+/);
+                const probe = document.createElement("span");
+                probe.style.cssText = "position: absolute; visibility: hidden; white-space: nowrap";
+                summary.appendChild(probe);
+                words.forEach((word) => {
+                    probe.textContent = word;
+                    if (probe.offsetWidth > summary.clientWidth) {
+                        tight.push(word + " (" + probe.offsetWidth + " px in " + summary.clientWidth + ")");
+                    }
+                });
+                probe.remove();
+            });
+            return tight;
+        })();');
+        if ($tight) {
+            $words = implode(', ', $tight);
+            throw new ExpectationException("Words of session titles wider than their column: {$words}", $this->getSession());
+        }
+    }
+
+    /**
      * The plan item of a session moves to the user's today, as if midnight had passed while its form was open.
      *
      * @Given the day of the session :title comes for :username

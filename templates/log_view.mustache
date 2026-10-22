@@ -24,6 +24,7 @@
     Context variables required for this template:
     * card - The session to log (null when no session is left from today on): istoday, and the fields of a row of
       mod_classprogress/log_items.
+    * canedit - Whether the user may log sessions; without it, nothing links to the entry form.
     * addurl - Link to add an unplanned session; empty when the user may not.
     * planurl, exporturl, deletedurl - Links to the plan, the export and the history of deleted entries.
     * pending - Sessions up to today without an entry, oldest first: count, rows (see mod_classprogress/log_items) and
@@ -37,6 +38,7 @@
         "card": {"istoday": true, "date": "2026-10-16", "hasplan": true, "title": "Entorn", "block": "RA1", "hours": "2",
             "content": "<ul><li>Instal·lació de l'IDE</li></ul>",
             "logurl": "https://example.com/mod/classprogress/entry.php?id=1&itemid=2"},
+        "canedit": true,
         "addurl": "https://example.com/mod/classprogress/entry.php?id=1",
         "planurl": "https://example.com/mod/classprogress/plan.php?id=1",
         "exporturl": "https://example.com/mod/classprogress/export.php?id=1",
@@ -60,7 +62,10 @@
                 <p class="mb-1"><strong>{{date}} · {{title}}</strong></p>
                 <p class="text-muted">{{#hours}}{{hours}} h{{#block}} · {{/block}}{{/hours}}{{block}}</p>
                 {{{content}}}
-                <a class="btn btn-primary" href="{{logurl}}">{{#istoday}}{{#str}} logthissession, mod_classprogress {{/str}}{{/istoday}}{{^istoday}}{{#str}} logcancellation, mod_classprogress {{/str}}{{/istoday}}</a>
+                {{#canedit}}
+                    {{#istoday}}<a class="btn btn-primary" href="{{logurl}}">{{#str}} logthissession, mod_classprogress {{/str}}</a>{{/istoday}}
+                    {{^istoday}}<a class="btn btn-outline-secondary" href="{{logurl}}">{{#str}} logcancellation, mod_classprogress {{/str}}</a>{{/istoday}}
+                {{/canedit}}
             </div>
         </section>
     {{/card}}
